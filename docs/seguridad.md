@@ -20,4 +20,9 @@ Estado de los diez controles que piden las bases de la convocatoria.
 - De los clientes del negocio solo se guarda el nombre.
 - El registro exige aceptar la política de tratamiento y guarda la fecha de aceptación.
 - La MiPyme es Responsable; la Gobernación, Encargada.
-- Pendiente: texto de la política dentro de la app y opción de exportar y eliminar los datos.
+- La política se puede leer dentro de la app (Ajustes · Privacidad y datos); el registro explica en cuatro puntos qué se guarda, para qué, quién responde y qué derechos hay.
+- Acceso: la app copia todos los datos del negocio en JSON.
+- Rectificación: nombre y correo se corrigen desde Mis datos personales.
+- Supresión: `DELETE /api/v1/cuenta` borra cuenta y movimientos en el servidor y luego la app borra el teléfono (ADR-04). Probado en `SyncFlujoTest`.
+- Cifras anónimas para estudios: casilla opcional, apagada por defecto. Hoy solo guarda la decisión; no se envía nada hasta definir qué cifras y con qué agregación.
+- PIN de 4 números: candado de comodidad guardado como hash SHA-256 con sal en el almacén seguro; 5 fallos bloquean 30 segundos. No sustituye la clave de la cuenta.

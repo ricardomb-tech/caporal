@@ -6,12 +6,16 @@ import '../data/repositorio.dart';
 import '../formato.dart';
 import '../sync/sesion.dart';
 import '../sync/sincronizador.dart';
-import 'pantalla_deudores.dart';
+import 'pantalla_estado_envio.dart';
+import 'pantalla_historial.dart';
 import 'pantalla_registrar.dart';
 import 'tema.dart';
+import 'widgets.dart';
 
 class PantallaInicio extends StatelessWidget {
-  const PantallaInicio({super.key});
+  /// Cambia a la pestaña "Le deben".
+  final VoidCallback verDeudores;
+  const PantallaInicio({super.key, required this.verDeudores});
 
   @override
   Widget build(BuildContext context) {
@@ -19,72 +23,95 @@ class PantallaInicio extends StatelessWidget {
     final sync = context.watch<Sincronizador>();
     final sesion = context.watch<Sesion>();
 
-    void abrir(TipoMovimiento tipo) =>
-        Navigator.push(context, MaterialPageRoute(builder: (_) => PantallaRegistrar(tipo: tipo)));
+    void abrir(TipoMovimiento tipo) => Navigator.push(context, MaterialPageRoute(builder: (_) => PantallaRegistrar(tipo: tipo)));
 
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Text(sesion.nombreNegocio ?? 'Mi negocio',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+    return FutureBuilder<List<Movimiento>>(
+      future: repo.ultimos(limite: 4),
+      builder: (_, s) {
+        final recientes = s.data ?? const <Movimiento>[];
+        final vacio = s.hasData && recientes.isEmpty;
+        return Pantalla(
+          titulo: sesion.nombreNegocio ?? 'Mi negocio',
+          subtitulo: vacio ? 'Su negocio empieza hoy' : 'Hola, bienvenido',
+          atras: false,
+          hijos: [
             _EstadoSenal(sync),
-            const SizedBox(height: 16),
-            FutureBuilder<ResumenHoy>(
-              future: repo.resumenHoy(),
-              builder: (_, s) {
-                final r = s.data ?? const ResumenHoy(0, 0);
-                return Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(color: Colores.verde, borderRadius: BorderRadius.circular(20)),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Lo que ganó hoy', style: TextStyle(color: Colors.white70, fontSize: 15)),
-                    Text(pesos(r.ganancia),
-                        style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
-                    Text('Vendió ${pesos(r.ventas)}  ·  Gastó ${pesos(r.gastos)}',
-                        style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                  ]),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(children: [
-              _Accion('Vendí', Icons.add, Colores.verde, Colores.verdeClaro, () => abrir(TipoMovimiento.venta)),
-              const SizedBox(width: 10),
-              _Accion('Gasté', Icons.remove, Colores.rojo, Colores.rojoClaro, () => abrir(TipoMovimiento.gasto)),
-              const SizedBox(width: 10),
-              _Accion('Fié', Icons.schedule, Colores.ambarTexto, Colores.ambarClaro,
-                  () => abrir(TipoMovimiento.fiado)),
-            ]),
-            const SizedBox(height: 16),
-            FutureBuilder<List<Deudor>>(
-              future: repo.deudores(),
-              builder: (_, s) {
-                final lista = s.data ?? const <Deudor>[];
-                final total = lista.fold<int>(0, (a, d) => a + d.saldo);
-                return Card(
-                  color: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                    title: const Text('Le deben', style: TextStyle(color: Colores.gris, fontSize: 14)),
-                    subtitle: Text(pesos(total),
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colores.texto)),
-                    trailing: FilledButton.tonal(
-                      onPressed: () => Navigator.push(
-                          context, MaterialPageRoute(builder: (_) => const PantallaDeudores())),
-                      child: const Text('Ver'),
+            if (vacio) ...[
+              const SizedBox(height: 24),
+              Column(children: [
+                Insignia.icono(Icons.inventory_2_outlined, Colores.verde, tam: 96),
+                const SizedBox(height: 14),
+                const Text('Aún no hay movimientos', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text('Anote su primera venta, su primer gasto o a quién le fió. Toma menos de un minuto.',
+                    textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: Colores.gris)),
+              ]),
+              const SizedBox(height: 12),
+              BotonCaporal('Anotar mi primera venta', icono: Icons.add, alTocar: () => abrir(TipoMovimiento.venta)),
+              BotonCaporal('Anotar un gasto', estilo: EstiloBoton.contorno, alTocar: () => abrir(TipoMovimiento.gasto)),
+            ] else ...[
+              FutureBuilder<ResumenHoy>(
+                future: repo.resumenHoy(),
+                builder: (_, r) {
+                  final x = r.data ?? const ResumenHoy(0, 0);
+                  return Tarjeta(
+                    color: Colores.verde,
+                    relleno: const EdgeInsets.all(22),
+                    hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Lo que ganó hoy', style: TextStyle(color: Colors.white70, fontSize: 15)),
+                      Text(pesos(x.ganancia), style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
+                      Text('Vendió ${pesos(x.ventas)}  ·  Gastó ${pesos(x.gastos)}', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                    ]),
+                  );
+                },
+              ),
+              Row(children: [
+                _Accion('Vendí', Icons.add, Colores.verde, Colores.verdeClaro, () => abrir(TipoMovimiento.venta)),
+                const SizedBox(width: 10),
+                _Accion('Gasté', Icons.remove, Colores.rojo, Colores.rojoClaro, () => abrir(TipoMovimiento.gasto)),
+                const SizedBox(width: 10),
+                _Accion('Fié', Icons.schedule, Colores.ambarTexto, Colores.ambarClaro, () => abrir(TipoMovimiento.fiado)),
+              ]),
+              FutureBuilder<List<Deudor>>(
+                future: repo.deudores(),
+                builder: (_, d) {
+                  final total = (d.data ?? const <Deudor>[]).fold<int>(0, (a, x) => a + x.saldo);
+                  return Tarjeta(
+                    hijo: Row(children: [
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Text('Le deben', style: TextStyle(color: Colores.gris, fontSize: 14)),
+                          Text(pesos(total), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        ]),
+                      ),
+                      FilledButton.tonal(onPressed: verDeudores, child: const Text('Ver')),
+                    ]),
+                  );
+                },
+              ),
+              FutureBuilder<Set<String>>(
+                future: repo.idsPendientes(),
+                builder: (_, p) => Tarjeta(
+                  relleno: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                        const Text('Lo último', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.gris)),
+                        GestureDetector(
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaHistorial())),
+                          child: const Text('Ver todo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.verde)),
+                        ),
+                      ]),
                     ),
-                  ),
-                );
-              },
-            ),
+                    for (final m in recientes) FilaMovimiento(m: m, pendiente: (p.data ?? const <String>{}).contains(m.id)),
+                  ]),
+                ),
+              ),
+            ],
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -112,10 +139,13 @@ class _EstadoSenal extends StatelessWidget {
     }
     return Align(
       alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(16)),
-        child: Text(texto, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w500)),
+      child: GestureDetector(
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaEstadoEnvio())),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(16)),
+          child: Text(texto, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w500)),
+        ),
       ),
     );
   }

@@ -20,6 +20,7 @@ class Sincronizador extends ChangeNotifier {
 
   bool conSenal = true;
   int pendientes = 0;
+  bool huboError = false;
   DateTime? ultimaVez;
 
   Sincronizador(this.repo, this.sesion);
@@ -67,15 +68,18 @@ class Sincronizador extends ChangeNotifier {
               ...(datos['duplicados'] as List).cast<String>(),
             ]);
             ultimaVez = DateTime.now();
+            huboError = false;
           } else if (r.statusCode == 401) {
             await sesion.tokenVencido();
             break;
           } else {
+            huboError = true;
             await repo.contarIntento(ids);
             break;
           }
         } catch (_) {
           // Sin red o tiempo agotado: los movimientos siguen en la cola y se reintenta después.
+          huboError = conSenal;
           await repo.contarIntento(ids);
           break;
         }

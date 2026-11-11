@@ -21,7 +21,7 @@ class BaseLocal {
       await _almacen.write(key: _claveLlave, value: llave);
     }
     final ruta = p.join(await getDatabasesPath(), 'caporal.db');
-    return openDatabase(ruta, password: llave, version: 1, onCreate: _crear);
+    return openDatabase(ruta, password: llave, version: 2, onCreate: _crear, onUpgrade: _actualizar);
   }
 
   static Future<String> dispositivoId() async {
@@ -55,5 +55,21 @@ class BaseLocal {
         intentos INTEGER NOT NULL DEFAULT 0
       )''');
     await db.execute('CREATE INDEX idx_movimiento_creado ON movimiento (creado_en)');
+    await _crearProductos(db);
+  }
+
+  static Future<void> _actualizar(Database db, int anterior, int nueva) async {
+    if (anterior < 2) await _crearProductos(db);
+  }
+
+  /// Catálogo del negocio: lo que más vende, con su precio, para anotar con un toque.
+  static Future<void> _crearProductos(Database db) async {
+    await db.execute('''
+      CREATE TABLE producto (
+        id TEXT PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        precio INTEGER NOT NULL,
+        orden INTEGER NOT NULL
+      )''');
   }
 }

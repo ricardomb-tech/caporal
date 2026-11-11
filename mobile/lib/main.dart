@@ -7,7 +7,9 @@ import 'data/repositorio.dart';
 import 'sync/sesion.dart';
 import 'sync/sincronizador.dart';
 import 'ui/pantalla_ingreso.dart';
-import 'ui/pantalla_inicio.dart';
+import 'ui/pantalla_bienvenida.dart';
+import 'ui/pantalla_pin.dart';
+import 'ui/pantalla_principal.dart';
 import 'ui/tema.dart';
 
 Future<void> main() async {
@@ -31,12 +33,39 @@ Future<void> main() async {
   ));
 }
 
-class CaporalApp extends StatelessWidget {
+class CaporalApp extends StatefulWidget {
   const CaporalApp({super.key});
+
+  @override
+  State<CaporalApp> createState() => _CaporalAppState();
+}
+
+class _CaporalAppState extends State<CaporalApp> {
+  bool _splash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 1400), () {
+      if (mounted) setState(() => _splash = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final sesion = context.watch<Sesion>();
+    final Widget inicio;
+    if (_splash) {
+      inicio = const PantallaSplash();
+    } else if (!sesion.activa && !sesion.bienvenidaVista) {
+      inicio = const PantallaBienvenida();
+    } else if (!sesion.activa) {
+      inicio = const PantallaIngreso();
+    } else if (sesion.tienePin && !sesion.desbloqueada) {
+      inicio = const PantallaPin();
+    } else {
+      inicio = const PantallaPrincipal();
+    }
     return MaterialApp(
       title: 'Caporal',
       debugShowCheckedModeBanner: false,
@@ -44,7 +73,7 @@ class CaporalApp extends StatelessWidget {
       locale: const Locale('es', 'CO'),
       supportedLocales: const [Locale('es', 'CO')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: sesion.activa ? const PantallaInicio() : const PantallaIngreso(),
+      home: inicio,
     );
   }
 }

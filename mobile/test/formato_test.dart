@@ -1,5 +1,6 @@
 import 'package:caporal/data/movimiento.dart';
 import 'package:caporal/formato.dart';
+import 'package:caporal/ui/pantalla_historial.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -28,5 +29,28 @@ void main() {
     expect(copia.creadoEn, m.creadoEn);
     expect(m.aJson()['tipo'], 'FIADO');
     expect(m.aJson()['creadoEnDispositivo'], '2026-11-11T16:15:00.000Z');
+  });
+
+  Movimiento mov(TipoMovimiento t, {String? reverso}) => Movimiento(
+        id: 'x',
+        tipo: t,
+        valor: 1000,
+        dispositivoId: 'tel-1',
+        creadoEn: DateTime.utc(2026, 11, 11),
+        reversoDe: reverso,
+      );
+
+  test('el signo del reverso es el contrario al del movimiento original', () {
+    expect(signoDe(mov(TipoMovimiento.venta)), '+ ');
+    expect(signoDe(mov(TipoMovimiento.venta, reverso: 'a')), '− ');
+    expect(signoDe(mov(TipoMovimiento.gasto)), '− ');
+    expect(signoDe(mov(TipoMovimiento.gasto, reverso: 'a')), '+ ');
+    expect(signoDe(mov(TipoMovimiento.fiado)), '');
+    expect(signoDe(mov(TipoMovimiento.abono)), '+ ');
+  });
+
+  test('el nombre del tipo aclara cuando es un reverso', () {
+    expect(nombreTipo(mov(TipoMovimiento.venta)), 'Venta');
+    expect(nombreTipo(mov(TipoMovimiento.venta, reverso: 'a')), 'Reverso de Venta');
   });
 }

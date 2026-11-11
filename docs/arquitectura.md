@@ -35,6 +35,17 @@ La app es offline-first: toda operación se escribe primero en el teléfono. El 
 - **Decisión.** A para el esqueleto: menos piezas y cifrado en reposo desde el primer día.
 - **Costo.** Sin verificación de consultas al compilar. Se revisa pasar a Drift si el esquema crece.
 
+## ADR-04. Derecho de supresión como única excepción a la inmutabilidad
+
+- **Contexto.** La Ley 1581 de 2012 da al titular el derecho de pedir que se supriman sus datos; el ADR-01 dice que los movimientos nunca se borran.
+- **Decisión.** `DELETE /api/v1/cuenta` borra la cuenta y todos sus movimientos, solo del usuario autenticado. En la app, el servidor se borra primero; si falla, no se borra nada en el teléfono y se puede reintentar.
+- **Consecuencia.** Es irreversible y exige conexión. La corrección de errores sigue siendo por reverso; el borrado es solo para cerrar la cuenta.
+
+## ADR-05. Reversos con el mismo valor y signo implícito
+
+- **Decisión.** Un reverso es un movimiento del mismo tipo y valor positivo con `reverso_de`. Todas las sumas (ganancia, deudas, semana) multiplican por -1 cuando `reverso_de` no es nulo.
+- **Costo.** Cada consulta debe recordar el signo; está concentrado en `Repositorio`.
+
 ## Pendiente por decidir
 
 - Catálogos (clientes y productos) con "último cambio por campo".
