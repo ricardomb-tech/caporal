@@ -64,4 +64,4 @@ docs/      Arquitectura, decisiones y seguridad
 
 ## Derechos
 
-© 2026 Equipo Caporal. Todos los derechos reservados. Las dependencias usan licencias permisivas (BSD, MIT, Apache 2.0, PostgreSQL); ver `docs/seguridad.md`.
+© 2026 caporal_tech. Todos los derechos reservados. Las dependencias usan licencias permisivas (BSD, MIT, Apache 2.0, PostgreSQL); ver `docs/seguridad.md`.
