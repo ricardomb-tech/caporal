@@ -1,0 +1,9 @@
+target/
+.env
+*.iml
+.idea/
+.vscode/
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins*
+mobile/pubspec.lock
