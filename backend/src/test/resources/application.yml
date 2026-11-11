@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:caporal;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  flyway:
+    enabled: true
+caporal:
+  jwt:
+    secret: secreto-solo-para-pruebas-con-mas-de-32-caracteres
+    minutos-vigencia: 60
+  seguridad:
+    intentos-maximos: 3
+    minutos-bloqueo: 15
+    solicitudes-por-minuto: 1000

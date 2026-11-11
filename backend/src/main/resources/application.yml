@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: caporal-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/caporal}
+    username: ${SPRING_DATASOURCE_USERNAME:caporal}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  flyway:
+    enabled: true
+server:
+  forward-headers-strategy: framework
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+caporal:
+  jwt:
+    secret: ${CAPORAL_JWT_SECRET:}
+    minutos-vigencia: 60
+  seguridad:
+    intentos-maximos: 5
+    minutos-bloqueo: 15
+    solicitudes-por-minuto: 120
