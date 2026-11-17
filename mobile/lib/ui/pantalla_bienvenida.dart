@@ -2,29 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../sync/sesion.dart';
-import 'logo_caporal.dart';
 import 'tema.dart';
 import 'widgets.dart';
 
 /// Pantalla verde de arranque con el logo.
-class PantallaSplash extends StatelessWidget {
-  const PantallaSplash({super.key});
-
-  @override
-  Widget build(BuildContext context) => const Scaffold(
-        backgroundColor: Colores.verde,
-        body: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            LogoCaporal(tam: 110, variante: VarianteLogo.sinFondo),
-            SizedBox(height: 20),
-            Text('Caporal', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)),
-            SizedBox(height: 6),
-            Text('Las cuentas de su negocio', style: TextStyle(fontSize: 16, color: Color(0xCCFFFFFF))),
-          ]),
-        ),
-      );
-}
-
 /// Tres pantallas cortas que explican lo esencial, solo la primera vez.
 class PantallaBienvenida extends StatefulWidget {
   const PantallaBienvenida({super.key});

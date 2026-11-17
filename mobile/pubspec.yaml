@@ -30,6 +30,7 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   sqflite_common_ffi: ^2.3.3
   flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
@@ -55,3 +56,11 @@ flutter_launcher_icons:
   min_sdk_android: 31
   adaptive_icon_background: "#1B7F4B"
   adaptive_icon_foreground: "assets/icono/icono_frente.png"
+
+# Pantalla de arranque nativa (se genera con: dart run flutter_native_splash:create)
+flutter_native_splash:
+  color: "#1B7F4B"
+  image: assets/icono/arranque.png
+  android_12:
+    color: "#1B7F4B"
+    image: assets/icono/arranque_android12.png

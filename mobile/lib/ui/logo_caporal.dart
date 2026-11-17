@@ -13,6 +13,9 @@ enum VarianteLogo {
   /// Cuadro tinta con C blanca.
   oscuro,
 
+  /// Cuadro blanco sin borde y C verde (sobre fondos verdes, como el splash).
+  blanco,
+
   /// Solo la C, sin cuadro (para ponerla sobre un fondo propio).
   sinFondo,
 }
@@ -30,6 +33,21 @@ class LogoCaporal extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       CustomPaint(size: Size(tam, tam), painter: _PintorLogo(variante, color));
+}
+
+/// La C de Caporal en un cuadro de lado [s]: anillo con hueco central y una ranura recta hacia la derecha,
+/// donde se asoma el sol (ver "Marca" en el diseño). La usan el logo en pantalla y el ícono de la app.
+Path rutaC(double s) {
+  final c = Offset(s * 0.5, s * 0.5);
+  final anillo = Path()..addOval(Rect.fromCircle(center: c, radius: s * 0.28));
+  final hueco = Path()..addOval(Rect.fromCircle(center: c, radius: s * 0.12));
+  final alto = s * 0.17;
+  final ranura = Path()
+    ..addRRect(RRect.fromRectAndRadius(
+      Rect.fromLTWH(c.dx, c.dy - alto / 2, s * 0.32, alto),
+      Radius.circular(alto / 2),
+    ));
+  return Path.combine(PathOperation.difference, Path.combine(PathOperation.difference, anillo, hueco), ranura);
 }
 
 class _PintorLogo extends CustomPainter {
@@ -67,24 +85,15 @@ class _PintorLogo extends CustomPainter {
         colorC = Colores.verde;
       case VarianteLogo.oscuro:
         canvas.drawRRect(cuadro, Paint()..color = Colores.texto);
+      case VarianteLogo.blanco:
+        canvas.drawRRect(cuadro, Paint()..color = Colors.white);
+        colorC = Colores.verde;
       case VarianteLogo.sinFondo:
         colorC = color;
     }
 
-    final centro = Offset(s * 0.47, s * 0.5);
-    final grosor = s * 0.155;
-    canvas.drawArc(
-      Rect.fromCircle(center: centro, radius: s * 0.195),
-      0.66,
-      6.283185 - 1.32,
-      false,
-      Paint()
-        ..color = colorC
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = grosor
-        ..strokeCap = StrokeCap.round,
-    );
-    canvas.drawCircle(Offset(s * 0.70, s * 0.5), s * 0.078, Paint()..color = Colores.ambar);
+    canvas.drawPath(rutaC(s), Paint()..color = colorC);
+    canvas.drawCircle(Offset(s * 0.70, s * 0.5), s * 0.075, Paint()..color = Colores.ambar);
   }
 
   @override

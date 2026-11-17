@@ -12,6 +12,7 @@ import 'sync/sesion.dart';
 import 'sync/sincronizador.dart';
 import 'ui/pantalla_ingreso.dart';
 import 'ui/pantalla_bienvenida.dart';
+import 'ui/pantalla_splash.dart';
 import 'ui/pantalla_pin.dart';
 import 'ui/pantalla_principal.dart';
 import 'ui/tema.dart';
