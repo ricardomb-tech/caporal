@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/movimiento.dart';
+import '../data/producto.dart';
 import '../data/repositorio.dart';
 import '../formato.dart';
 import 'pantalla_exito.dart';
+import 'selector_productos.dart';
 import 'tema.dart';
 import 'widgets.dart';
 
@@ -24,7 +26,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   String _digitos = '';
   late final TextEditingController _cliente = TextEditingController(text: widget.clienteInicial ?? '');
   final _nota = TextEditingController();
-  final List<String> _items = [];
+  final List<Producto> _carrito = [];
   String _categoria = _categorias.first;
   String _medio = 'EFECTIVO';
   bool _guardando = false;
@@ -54,7 +56,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
     setState(() {
       if (t == 'Borrar') {
         if (_digitos.isNotEmpty) _digitos = _digitos.substring(0, _digitos.length - 1);
-        if (_digitos.isEmpty) _items.clear();
+        if (_digitos.isEmpty) _carrito.clear();
       } else if (_digitos.length + t.length <= 9) {
         _digitos = (_digitos + t).replaceFirst(RegExp(r'^0+'), '');
       }
@@ -64,7 +66,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   void _sumarProducto(Producto p) {
     setState(() {
       _digitos = (_valor + p.precio).toString();
-      _items.add(p.nombre);
+      _carrito.add(p);
     });
   }
 
@@ -73,12 +75,19 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
       final n = _nota.text.trim();
       return n.isEmpty ? _categoria : '$_categoria · $n';
     }
-    if (_items.isEmpty) return null;
+    if (_carrito.isEmpty) return null;
+    return _lineas.map((l) => l.cantidad > 1 ? '${l.cantidad} ${l.producto.nombre}' : l.producto.nombre).join(', ');
+  }
+
+  /// Lo vendido, agrupado por producto, en el orden en que se fue agregando.
+  List<LineaVenta> get _lineas {
     final cuenta = <String, int>{};
-    for (final i in _items) {
-      cuenta[i] = (cuenta[i] ?? 0) + 1;
+    final productos = <String, Producto>{};
+    for (final p in _carrito) {
+      cuenta[p.id] = (cuenta[p.id] ?? 0) + 1;
+      productos[p.id] = p;
     }
-    return cuenta.entries.map((e) => e.value > 1 ? '${e.value} ${e.key}' : e.key).join(', ');
+    return [for (final e in cuenta.entries) LineaVenta(productos[e.key]!, e.value)];
   }
 
   Future<void> _guardar() async {
@@ -89,6 +98,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
           descripcion: _descripcion,
           clienteNombre: (_esFiado || widget.tipo == TipoMovimiento.abono) ? _cliente.text.trim() : null,
           medioPago: (_esVenta || _esGasto) ? _medio : null,
+          lineas: _esVenta ? _lineas : const [],
         );
     if (!mounted) return;
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PantallaExito(movimiento: m)));
@@ -96,7 +106,6 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
 
   @override
   Widget build(BuildContext context) {
-    final repo = context.read<Repositorio>();
     final puedeGuardar = _valor > 0 && !_guardando && (!_esFiado || _cliente.text.trim().isNotEmpty);
     return Scaffold(
       body: SafeArea(
@@ -114,39 +123,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               ),
             ]),
             const SizedBox(height: 12),
-            if (_esVenta)
-              SizedBox(
-                height: 62,
-                child: FutureBuilder<List<Producto>>(
-                  future: repo.productos(),
-                  builder: (_, s) {
-                    final lista = s.data ?? const <Producto>[];
-                    if (lista.isEmpty) {
-                      return const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text('Agregue sus productos en Ajustes para anotar con un toque.',
-                              style: TextStyle(fontSize: 13, color: Colores.gris)));
-                    }
-                    return ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: lista.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (_, i) => InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () => _sumarProducto(lista[i]),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Text(lista[i].nombre, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                            Text(pesos(lista[i].precio), style: const TextStyle(fontSize: 12, color: Colores.gris)),
-                          ]),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+            if (_esVenta) SelectorProductos(enVenta: _carrito, alElegir: _sumarProducto),
             if (_esGasto)
               Align(
                 alignment: Alignment.centerLeft,

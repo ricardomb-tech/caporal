@@ -1,19 +1,23 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
-import '../config.dart';
+import '../data/inventario.dart';
 import '../data/repositorio.dart';
+import 'cliente_api.dart';
+import 'envio.dart';
+import 'envio_catalogo.dart';
+import 'envio_movimientos.dart';
 import 'sesion.dart';
 
 /// Envía la cola de salida cuando hay señal. Es seguro reintentar:
-/// el servidor reconoce por id los movimientos que ya recibió.
+/// el servidor reconoce por id lo que ya recibió, así que nada se duplica.
 class Sincronizador extends ChangeNotifier {
   final Repositorio repo;
+  final Inventario inventario;
   final Sesion sesion;
+  late final List<Envio> _envios;
   StreamSubscription<List<ConnectivityResult>>? _escucha;
   Timer? _reloj;
   bool _enCurso = false;
@@ -23,7 +27,11 @@ class Sincronizador extends ChangeNotifier {
   bool huboError = false;
   DateTime? ultimaVez;
 
-  Sincronizador(this.repo, this.sesion);
+  Sincronizador(this.repo, this.inventario, this.sesion) {
+    final api = ClienteApi();
+    // El catálogo va primero: así el servidor conoce el producto antes de recibir sus ventas.
+    _envios = [EnvioCatalogo(inventario, repo.cola, api), EnvioMovimientos(repo, api)];
+  }
 
   Future<void> iniciar() async {
     _actualizarSenal(await Connectivity().checkConnectivity());
@@ -34,6 +42,7 @@ class Sincronizador extends ChangeNotifier {
     // Respaldo por si el sistema no avisa el cambio de red.
     _reloj = Timer.periodic(const Duration(minutes: 2), (_) => sincronizar());
     repo.addListener(sincronizar);
+    inventario.addListener(sincronizar);
     await sincronizar();
   }
 
@@ -48,41 +57,8 @@ class Sincronizador extends ChangeNotifier {
     if (_enCurso || !conSenal || sesion.token == null || pendientes == 0) return;
     _enCurso = true;
     try {
-      while (true) {
-        final lote = await repo.pendientesDeEnvio();
-        if (lote.isEmpty) break;
-        final ids = lote.map((m) => m.id);
-        try {
-          final r = await http
-              .post(Uri.parse('$apiUrl/api/v1/sync/push'),
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ${sesion.token}',
-                  },
-                  body: jsonEncode({'movimientos': lote.map((m) => m.aJson()).toList()}))
-              .timeout(const Duration(seconds: 20));
-          if (r.statusCode == 200) {
-            final datos = jsonDecode(r.body) as Map<String, dynamic>;
-            await repo.marcarEnviados([
-              ...(datos['aceptados'] as List).cast<String>(),
-              ...(datos['duplicados'] as List).cast<String>(),
-            ]);
-            ultimaVez = DateTime.now();
-            huboError = false;
-          } else if (r.statusCode == 401) {
-            await sesion.tokenVencido();
-            break;
-          } else {
-            huboError = true;
-            await repo.contarIntento(ids);
-            break;
-          }
-        } catch (_) {
-          // Sin red o tiempo agotado: los movimientos siguen en la cola y se reintenta después.
-          huboError = conSenal;
-          await repo.contarIntento(ids);
-          break;
-        }
+      for (final envio in _envios) {
+        if (!await _vaciar(envio)) break;
       }
     } finally {
       _enCurso = false;
@@ -91,9 +67,30 @@ class Sincronizador extends ChangeNotifier {
     }
   }
 
+  /// Envía lotes de un tipo hasta que no quede nada. Devuelve false si hay que parar.
+  Future<bool> _vaciar(Envio envio) async {
+    while (true) {
+      switch (await envio.enviarLote(sesion.token!)) {
+        case ResultadoEnvio.nada:
+          return true;
+        case ResultadoEnvio.enviado:
+          ultimaVez = DateTime.now();
+          huboError = false;
+        case ResultadoEnvio.sesionVencida:
+          await sesion.tokenVencido();
+          return false;
+        case ResultadoEnvio.error:
+          // Sin red o error del servidor: lo pendiente sigue en la cola y se reintenta después.
+          huboError = conSenal;
+          return false;
+      }
+    }
+  }
+
   @override
   void dispose() {
     repo.removeListener(sincronizar);
+    inventario.removeListener(sincronizar);
     _escucha?.cancel();
     _reloj?.cancel();
     super.dispose();

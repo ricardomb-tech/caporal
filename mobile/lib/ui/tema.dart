@@ -21,7 +21,7 @@ ThemeData temaCaporal() => ThemeData(
       appBarTheme: const AppBarTheme(backgroundColor: Colores.fondo, foregroundColor: Colores.texto, elevation: 0),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(58),
+          minimumSize: const Size(64, 48),
           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),

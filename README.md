@@ -12,13 +12,14 @@ Esqueleto técnico en construcción. Lo que hay hoy:
 |---|---|---|
 | `backend/` | API Spring Boot 3 (Java 21): registro e inicio de sesión con JWT, bloqueo por intentos fallidos, límite de solicitudes, sincronización idempotente (`/api/v1/sync/push` y `/pull`), borrado de cuenta y datos (`DELETE /api/v1/cuenta`, Ley 1581), migraciones Flyway, pruebas de integración | Escrito; se compila y prueba en la integración continua |
 | `mobile/` | App Flutter: base local cifrada (SQLCipher), cola de salida, sincronización automática. Las 31 pantallas del diseño: splash y bienvenida, ingreso, registro en 3 pasos con autorización de datos, inicio con navegación flotante de vidrio, vender / gastar / fiar, confirmación, movimientos, detalle y corrección por reverso, le deben y cliente (cobro por WhatsApp, abonos), resumen semanal, productos, perfil, negocio, PIN, estado de envío, privacidad, eliminar datos y ayuda | Escrito; **no se ha compilado ni probado todavía** (se analiza y prueba en la integración continua) |
+| Inventario | Catálogo con cantidades: vender descuenta, "Llegó mercancía", "Conté", agotados y valor de lo guardado; funciona sin señal y se sincroniza sin duplicar (ver ADR-06) | Probado: 14 pruebas con SQLite real en la app y 10 de integración en la API |
 | `docker-compose.yml` | PostgreSQL 16 y la API en contenedores | Listo para levantar |
 | `docs/` | Arquitectura y decisiones (ADR), controles de seguridad | Primer borrador |
 
 Pendiente (hoja de ruta):
 
-- Recuperar clave por código SMS: la pantalla existe, el envío del código necesita un proveedor de mensajes (el botón avisa que llega en la siguiente versión).
-- Perfil, negocio y productos viven solo en el teléfono; falta sincronizarlos (último cambio por campo).
+- Recuperar clave por SMS: implementado con Twilio Verify; requiere `TWILIO_*` en `.env` (ver `.env.example`).
+- Productos e inventario ya se envían al servidor; falta traerlos de vuelta (pull) al reinstalar o en un segundo teléfono. Perfil y negocio siguen solo en el teléfono.
 - Huella dactilar para entrar (hoy solo PIN de 4 números como candado de comodidad).
 - Tablero de la Gobernación y publicación en tiendas.
 - Carpetas Android/iOS: `flutter create .` (ver abajo). Para abrir WhatsApp en Android 11+ agregue en `AndroidManifest.xml` un bloque `<queries>` con `https` (guía de `url_launcher`). El número de soporte de Ayuda se define con `--dart-define=SOPORTE_WHATSAPP=57...`.

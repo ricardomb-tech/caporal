@@ -10,7 +10,7 @@ import 'pantalla_mi_negocio.dart';
 import 'pantalla_mis_datos.dart';
 import 'pantalla_pin.dart';
 import 'pantalla_privacidad.dart';
-import 'pantalla_productos.dart';
+import 'pantalla_inventario.dart';
 import 'tema.dart';
 import 'widgets.dart';
 
@@ -74,7 +74,7 @@ class PantallaAjustes extends StatelessWidget {
             lineaSuave,
             fila(Icons.storefront_outlined, 'Mi negocio', 'Nombre, tipo y llave Bre-B', const PantallaMiNegocio()),
             lineaSuave,
-            fila(Icons.inventory_2_outlined, 'Mis productos', 'Para vender con un toque', const PantallaProductos()),
+            fila(Icons.inventory_2_outlined, 'Mi inventario', 'Productos, cantidades y precios', const PantallaInventario()),
           ]),
         ),
         Tarjeta(

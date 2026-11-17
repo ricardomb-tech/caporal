@@ -21,7 +21,7 @@ class BaseLocal {
       await _almacen.write(key: _claveLlave, value: llave);
     }
     final ruta = p.join(await getDatabasesPath(), 'caporal.db');
-    return openDatabase(ruta, password: llave, version: 2, onCreate: _crear, onUpgrade: _actualizar);
+    return openDatabase(ruta, password: llave, version: version, onCreate: crear, onUpgrade: actualizar);
   }
 
   static Future<String> dispositivoId() async {
@@ -34,7 +34,10 @@ class BaseLocal {
     return id;
   }
 
-  static Future<void> _crear(Database db, int version) async {
+  /// Versión del esquema. Súbala y agregue su paso en [actualizar] cada vez que cambie una tabla.
+  static const version = 3;
+
+  static Future<void> crear(Database db, int version) async {
     await db.execute('''
       CREATE TABLE movimiento (
         id TEXT PRIMARY KEY,
@@ -47,29 +50,82 @@ class BaseLocal {
         creado_en INTEGER NOT NULL,
         reverso_de TEXT
       )''');
-    // Cola de salida: un renglón por movimiento pendiente de enviar al servidor.
-    await db.execute('''
-      CREATE TABLE cola_salida (
-        movimiento_id TEXT PRIMARY KEY REFERENCES movimiento(id),
-        encolado_en INTEGER NOT NULL,
-        intentos INTEGER NOT NULL DEFAULT 0
-      )''');
     await db.execute('CREATE INDEX idx_movimiento_creado ON movimiento (creado_en)');
-    await _crearProductos(db);
+    await _crearCola(db);
+    await _crearCatalogo(db);
   }
 
-  static Future<void> _actualizar(Database db, int anterior, int nueva) async {
-    if (anterior < 2) await _crearProductos(db);
+  static Future<void> actualizar(Database db, int anterior, int nueva) async {
+    if (anterior < 2) {
+      await db.execute(
+          'CREATE TABLE producto (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, precio INTEGER NOT NULL, orden INTEGER NOT NULL)');
+    }
+    if (anterior < 3) {
+      await _migrarA3(db);
+    }
   }
 
-  /// Catálogo del negocio: lo que más vende, con su precio, para anotar con un toque.
-  static Future<void> _crearProductos(Database db) async {
+  /// Cola de salida única: un renglón por cada cosa pendiente de enviar al servidor
+  /// (movimientos de dinero, productos y movimientos de inventario).
+  static Future<void> _crearCola(Database db) => db.execute('''
+      CREATE TABLE cola (
+        tipo TEXT NOT NULL,
+        ref_id TEXT NOT NULL,
+        encolado_en INTEGER NOT NULL,
+        intentos INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (tipo, ref_id)
+      )''');
+
+  /// Catálogo del negocio e inventario. Cada campo del producto guarda cuándo cambió
+  /// (último cambio gana). La cantidad es la suma de [mov_inventario]; esa tabla solo se inserta.
+  static Future<void> _crearCatalogo(Database db) async {
     await db.execute('''
       CREATE TABLE producto (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL,
         precio INTEGER NOT NULL,
-        orden INTEGER NOT NULL
+        orden INTEGER NOT NULL,
+        controla_stock INTEGER NOT NULL DEFAULT 0,
+        activo INTEGER NOT NULL DEFAULT 1,
+        nombre_en INTEGER NOT NULL,
+        precio_en INTEGER NOT NULL,
+        controla_en INTEGER NOT NULL,
+        activo_en INTEGER NOT NULL
       )''');
+    await _crearMovInventario(db);
+  }
+
+  static Future<void> _crearMovInventario(Database db) async {
+    await db.execute('''
+      CREATE TABLE mov_inventario (
+        id TEXT PRIMARY KEY,
+        producto_id TEXT NOT NULL REFERENCES producto(id),
+        delta INTEGER NOT NULL,
+        motivo TEXT NOT NULL,
+        movimiento_id TEXT,
+        precio_unitario INTEGER,
+        dispositivo_id TEXT NOT NULL,
+        creado_en INTEGER NOT NULL
+      )''');
+    await db.execute('CREATE INDEX idx_inv_producto ON mov_inventario (producto_id)');
+    await db.execute('CREATE INDEX idx_inv_movimiento ON mov_inventario (movimiento_id)');
+  }
+
+  /// v2 -> v3: la cola pasa a ser única y el catálogo gana inventario. No se pierde nada.
+  static Future<void> _migrarA3(Database db) async {
+    final ahora = DateTime.now().toUtc().millisecondsSinceEpoch;
+    await _crearCola(db);
+    await db.execute(
+        "INSERT INTO cola (tipo, ref_id, encolado_en, intentos) SELECT 'movimiento', movimiento_id, encolado_en, intentos FROM cola_salida");
+    await db.execute('DROP TABLE cola_salida');
+    await db.execute('ALTER TABLE producto ADD COLUMN controla_stock INTEGER NOT NULL DEFAULT 0');
+    await db.execute('ALTER TABLE producto ADD COLUMN activo INTEGER NOT NULL DEFAULT 1');
+    for (final c in ['nombre_en', 'precio_en', 'controla_en', 'activo_en']) {
+      await db.execute('ALTER TABLE producto ADD COLUMN $c INTEGER NOT NULL DEFAULT $ahora');
+    }
+    // Los productos que ya existían nunca se enviaron: entran a la cola.
+    await db.execute(
+        "INSERT INTO cola (tipo, ref_id, encolado_en) SELECT 'producto', id, $ahora FROM producto");
+    await _crearMovInventario(db);
   }
 }

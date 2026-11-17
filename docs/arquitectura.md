@@ -3,7 +3,7 @@
 ```
 App Flutter (Android / iOS)
   pantallas -> Repositorio -> SQLite cifrada (SQLCipher)
-                    |             tablas: movimiento, cola_salida
+                    |             tablas: movimiento, producto, mov_inventario, cola
                     v
               Sincronizador --(HTTPS, JWT)--> API Spring Boot --> PostgreSQL
 ```
@@ -45,6 +45,15 @@ La app es offline-first: toda operación se escribe primero en el teléfono. El 
 
 - **Decisión.** Un reverso es un movimiento del mismo tipo y valor positivo con `reverso_de`. Todas las sumas (ganancia, deudas, semana) multiplican por -1 cuando `reverso_de` no es nulo.
 - **Costo.** Cada consulta debe recordar el signo; está concentrado en `Repositorio`.
+
+## ADR-06. Inventario como suma de movimientos inmutables
+
+- **Contexto.** La tienda vende sin señal desde uno o varios teléfonos; si la cantidad fuera un número que se edita, dos teléfonos sin conexión se pisarían y un reintento podría descontar dos veces.
+- **Decisión.** La cantidad de un producto no se guarda: es la suma de `mov_inventario` (INICIAL, COMPRA, VENTA, AJUSTE, REVERSO), que solo se inserta y cuyo id genera el teléfono. Vender guarda en UNA transacción local el movimiento de dinero, el descuento de inventario y sus renglones de la cola. Corregir una venta devuelve sus unidades con movimientos REVERSO. "Conté y hay N" anota solo la diferencia.
+- **Productos.** Último cambio gana *por campo* (nombre, precio, lleva cuenta, activo): cada campo viaja con su marca de tiempo y el servidor aplica solo lo más reciente. Repetir un envío o recibirlos en otro orden da el mismo resultado. Quitar un producto lo desactiva; su historial se conserva.
+- **Cola.** Una sola tabla `cola` (movimiento, producto, inventario). Si un producto se edita mientras se envía, su versión en la cola cambia y la confirmación vieja no lo saca: se vuelve a enviar.
+- **Servidor.** `POST /api/v1/sync/catalogo` es idempotente: confirma lo nuevo y lo repetido; nunca toca un producto de otro negocio. `mov_inventario.producto_id` no tiene llave foránea para no depender del orden de llegada.
+- **Costo.** Cada lectura de cantidad suma movimientos (indexado por producto; suficiente para el volumen de una tienda). Se puede agregar una tabla de saldos si crece.
 
 ## Pendiente por decidir
 

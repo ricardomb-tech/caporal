@@ -4,20 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+import 'cola_salida.dart';
+import 'inventario.dart';
 import 'movimiento.dart';
+import 'producto.dart';
 
 class Deudor {
   final String nombre;
   final int saldo;
   final DateTime desde;
   const Deudor(this.nombre, this.saldo, this.desde);
-}
-
-class Producto {
-  final String id;
-  final String nombre;
-  final int precio;
-  const Producto(this.id, this.nombre, this.precio);
 }
 
 class ResumenDia {
@@ -38,10 +34,12 @@ class ResumenHoy {
 class Repositorio extends ChangeNotifier {
   final Database db;
   final String dispositivoId;
-  Repositorio(this.db, this.dispositivoId);
+  final ColaSalida cola;
+  final Inventario inventario;
+  Repositorio(this.db, this.dispositivoId, this.cola, this.inventario);
 
-  /// Guarda el movimiento y lo encola en la MISMA transacción:
-  /// o quedan los dos o no queda ninguno, así no se pierde ni se duplica nada.
+  /// Guarda el movimiento, descuenta del inventario lo vendido y lo encola, todo en la MISMA transacción:
+  /// o queda todo o no queda nada, así no se pierde ni se duplica nada.
   Future<Movimiento> registrar({
     required TipoMovimiento tipo,
     required int valor,
@@ -49,27 +47,35 @@ class Repositorio extends ChangeNotifier {
     String? clienteNombre,
     String? medioPago,
     String? reversoDe,
+    List<LineaVenta> lineas = const [],
   }) async {
-    final m = Movimiento(
-      id: const Uuid().v4(),
-      tipo: tipo,
-      valor: valor,
-      descripcion: descripcion,
-      clienteNombre: clienteNombre,
-      medioPago: medioPago,
-      dispositivoId: dispositivoId,
-      creadoEn: DateTime.now().toUtc(),
-      reversoDe: reversoDe,
-    );
+    final m = _nuevo(tipo, valor, descripcion, clienteNombre, medioPago, reversoDe);
     await db.transaction((tx) async {
-      await tx.insert('movimiento', m.aFila());
-      await tx.insert('cola_salida', {
-        'movimiento_id': m.id,
-        'encolado_en': m.creadoEn.millisecondsSinceEpoch,
-      });
+      await _guardar(tx, m);
+      await inventario.descontarVenta(tx, m, lineas);
     });
+    inventario.avisarCambio();
     notifyListeners();
     return m;
+  }
+
+  Movimiento _nuevo(TipoMovimiento tipo, int valor, String? descripcion, String? clienteNombre, String? medioPago,
+          String? reversoDe) =>
+      Movimiento(
+        id: const Uuid().v4(),
+        tipo: tipo,
+        valor: valor,
+        descripcion: descripcion,
+        clienteNombre: clienteNombre,
+        medioPago: medioPago,
+        dispositivoId: dispositivoId,
+        creadoEn: DateTime.now().toUtc(),
+        reversoDe: reversoDe,
+      );
+
+  Future<void> _guardar(DatabaseExecutor tx, Movimiento m) async {
+    await tx.insert('movimiento', m.aFila());
+    await cola.encolar(tx, TipoCola.movimiento, m.id);
   }
 
   Future<ResumenHoy> resumenHoy() async {
@@ -116,33 +122,23 @@ class Repositorio extends ChangeNotifier {
   }
 
   Future<List<Movimiento>> pendientesDeEnvio({int limite = 100}) async {
-    final filas = await db.rawQuery('''
-      SELECT m.* FROM movimiento m
-      JOIN cola_salida c ON c.movimiento_id = m.id
-      ORDER BY c.encolado_en ASC LIMIT ?''', [limite]);
-    return filas.map(Movimiento.deFila).toList();
+    final ids = (await cola.pendientes(TipoCola.movimiento, limite: limite)).map((e) => e.refId).toList();
+    if (ids.isEmpty) return const [];
+    final marcas = List.filled(ids.length, '?').join(',');
+    final filas = await db.query('movimiento', where: 'id IN ($marcas)', whereArgs: ids);
+    final porId = {for (final f in filas) f['id'] as String: Movimiento.deFila(f)};
+    return [for (final id in ids) if (porId[id] != null) porId[id]!];
   }
 
-  Future<int> cantidadPendiente() async {
-    final r = await db.rawQuery('SELECT COUNT(*) AS n FROM cola_salida');
-    return (r.first['n'] as int?) ?? 0;
-  }
+  Future<int> cantidadPendiente() => cola.cantidad();
 
   /// Saca de la cola los movimientos que el servidor confirmó (aceptados o ya recibidos antes).
   Future<void> marcarEnviados(Iterable<String> ids) async {
-    final lista = ids.toList();
-    if (lista.isEmpty) return;
-    final marcas = List.filled(lista.length, '?').join(',');
-    await db.delete('cola_salida', where: 'movimiento_id IN ($marcas)', whereArgs: lista);
+    await cola.confirmar(TipoCola.movimiento, [for (final id in ids) EntradaCola(id, 1 << 62)]);
     notifyListeners();
   }
 
-  Future<void> contarIntento(Iterable<String> ids) async {
-    final lista = ids.toList();
-    if (lista.isEmpty) return;
-    final marcas = List.filled(lista.length, '?').join(',');
-    await db.rawUpdate('UPDATE cola_salida SET intentos = intentos + 1 WHERE movimiento_id IN ($marcas)', lista);
-  }
+  Future<void> contarIntento(Iterable<String> ids) => cola.contarIntento(TipoCola.movimiento, ids);
 
   /// Movimientos desde una fecha (o todos), del más nuevo al más viejo.
   Future<List<Movimiento>> desde(DateTime? inicio) async {
@@ -160,25 +156,26 @@ class Repositorio extends ChangeNotifier {
   }
 
   /// Ids de movimientos que todavía no se han enviado al servidor.
-  Future<Set<String>> idsPendientes() async {
-    final filas = await db.query('cola_salida', columns: ['movimiento_id']);
-    return {for (final f in filas) f['movimiento_id'] as String};
-  }
+  Future<Set<String>> idsPendientes() => cola.ids(TipoCola.movimiento);
 
   Future<bool> yaCorregido(String id) async {
     final r = await db.rawQuery('SELECT COUNT(*) AS n FROM movimiento WHERE reverso_de = ?', [id]);
     return ((r.first['n'] as int?) ?? 0) > 0;
   }
 
-  /// Corregir no borra: anota un reverso que apunta al movimiento original.
-  Future<Movimiento> corregir(Movimiento original) => registrar(
-        tipo: original.tipo,
-        valor: original.valor,
-        descripcion: original.descripcion,
-        clienteNombre: original.clienteNombre,
-        medioPago: original.medioPago,
-        reversoDe: original.id,
-      );
+  /// Corregir no borra: anota un reverso que apunta al movimiento original
+  /// y, si era una venta de productos, devuelve sus unidades al inventario.
+  Future<Movimiento> corregir(Movimiento original) async {
+    final m = _nuevo(original.tipo, original.valor, original.descripcion, original.clienteNombre, original.medioPago,
+        original.id);
+    await db.transaction((tx) async {
+      await _guardar(tx, m);
+      await inventario.devolverVenta(tx, original.id, m.id);
+    });
+    inventario.avisarCambio();
+    notifyListeners();
+    return m;
+  }
 
   /// Ventas y gastos de los últimos 7 días (el último elemento es hoy).
   Future<List<ResumenDia>> ultimaSemana() async {
@@ -201,48 +198,30 @@ class Repositorio extends ChangeNotifier {
     ];
   }
 
-  Future<List<Producto>> productos() async {
-    final filas = await db.query('producto', orderBy: 'orden ASC');
-    return [for (final f in filas) Producto(f['id'] as String, f['nombre'] as String, f['precio'] as int)];
-  }
-
-  Future<void> guardarProducto({String? id, required String nombre, required int precio}) async {
-    if (id == null) {
-      final r = await db.rawQuery('SELECT COALESCE(MAX(orden), 0) + 1 AS n FROM producto');
-      await db.insert('producto', {
-        'id': const Uuid().v4(),
-        'nombre': nombre,
-        'precio': precio,
-        'orden': (r.first['n'] as int?) ?? 1,
-      });
-    } else {
-      await db.update('producto', {'nombre': nombre, 'precio': precio}, where: 'id = ?', whereArgs: [id]);
-    }
-    notifyListeners();
-  }
-
-  Future<void> borrarProducto(String id) async {
-    await db.delete('producto', where: 'id = ?', whereArgs: [id]);
-    notifyListeners();
-  }
-
   /// Copia de todos los datos del negocio en JSON (derecho de acceso, Ley 1581).
   Future<String> exportarJson() async {
     final movs = await desde(null);
-    final prods = await productos();
+    final prods = await inventario.productos();
+    final inv = await inventario.todosLosMovimientos();
     return const JsonEncoder.withIndent('  ').convert({
       'movimientos': movs.map((m) => m.aJson()).toList(),
-      'productos': [for (final p in prods) {'nombre': p.nombre, 'precio': p.precio}],
+      'productos': [
+        for (final p in prods)
+          {'nombre': p.nombre, 'precio': p.precio, 'cantidad': p.controlaStock ? p.stock : null}
+      ],
+      'movimientosDeInventario': inv.map((e) => e.aJson()).toList(),
     });
   }
 
   /// Borra todo lo que hay en el teléfono (derecho de supresión).
   Future<void> borrarTodo() async {
     await db.transaction((tx) async {
-      await tx.delete('cola_salida');
+      await tx.delete('cola');
+      await tx.delete('mov_inventario');
       await tx.delete('movimiento');
       await tx.delete('producto');
     });
+    inventario.avisarCambio();
     notifyListeners();
   }
 }

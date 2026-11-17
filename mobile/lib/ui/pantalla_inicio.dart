@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/movimiento.dart';
+import '../data/inventario.dart';
 import '../data/repositorio.dart';
 import '../formato.dart';
 import '../sync/sesion.dart';
 import '../sync/sincronizador.dart';
 import 'pantalla_estado_envio.dart';
 import 'pantalla_historial.dart';
+import 'pantalla_inventario.dart';
 import 'pantalla_registrar.dart';
 import 'tema.dart';
 import 'widgets.dart';
@@ -89,6 +91,7 @@ class PantallaInicio extends StatelessWidget {
                   );
                 },
               ),
+              const _TarjetaInventario(),
               FutureBuilder<Set<String>>(
                 future: repo.idsPendientes(),
                 builder: (_, p) => Tarjeta(
@@ -177,6 +180,46 @@ class _Accion extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Acceso al inventario desde el inicio: cuánto vale lo que hay y si algo se agotó.
+class _TarjetaInventario extends StatelessWidget {
+  const _TarjetaInventario();
+
+  @override
+  Widget build(BuildContext context) {
+    final inv = context.watch<Inventario>();
+    return FutureBuilder<ResumenInventario>(
+      future: inv.resumen(),
+      builder: (_, s) {
+        final r = s.data ?? const ResumenInventario(0, 0, 0, 0);
+        final sinProductos = r.productos == 0;
+        return Tarjeta(
+          hijo: Row(children: [
+            Insignia.icono(Icons.inventory_2_outlined, r.agotados > 0 ? Colores.rojo : Colores.verde,
+                fondo: r.agotados > 0 ? Colores.rojoClaro : Colores.verdeClaro),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Mi inventario', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                Text(
+                  sinProductos
+                      ? 'Agregue sus productos'
+                      : (r.agotados > 0
+                          ? '${r.agotados} ${r.agotados == 1 ? 'agotado' : 'agotados'} · ${pesos(r.valor)} guardado'
+                          : '${pesos(r.valor)} guardado'),
+                  style: TextStyle(fontSize: 13, color: r.agotados > 0 ? Colores.rojo : Colores.gris),
+                ),
+              ]),
+            ),
+            FilledButton.tonal(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaInventario())),
+                child: const Text('Ver')),
+          ]),
+        );
+      },
     );
   }
 }
