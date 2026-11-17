@@ -59,6 +59,11 @@ public class Usuario {
         }
     }
 
+    public void cambiarClave(String nuevoHash) {
+        this.passwordHash = nuevoHash;
+        registrarIngreso();
+    }
+
     public void registrarIngreso() {
         intentosFallidos = 0;
         bloqueadoHasta = null;

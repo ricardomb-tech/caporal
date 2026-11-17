@@ -138,6 +138,18 @@ class Sesion extends ChangeNotifier {
     return error;
   }
 
+  /// Cambia la clave con el código recibido por mensaje y deja la sesión abierta.
+  Future<String?> restablecerClave({required String celular, required String codigo, required String clave}) async {
+    final error = await _enviar(
+        '/api/v1/auth/recuperar/restablecer', {'celular': celular, 'codigo': codigo, 'clave': clave});
+    if (error == null) {
+      this.celular = celular;
+      await _guardarPerfil();
+      notifyListeners();
+    }
+    return error;
+  }
+
   Future<String?> _enviar(String ruta, Map<String, Object?> cuerpo) async {
     try {
       final r = await http

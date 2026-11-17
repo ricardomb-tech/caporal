@@ -39,7 +39,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (n > maximoPorMinuto) {
             response.setStatus(429);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"mensaje\":\"Demasiadas solicitudes. Intente en un minuto\"}");
+            response.getWriter().write("{\"status\":429,\"detail\":\"Demasiadas solicitudes. Intente en un minuto\"}");
             return;
         }
         chain.doFilter(request, response);

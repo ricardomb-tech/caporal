@@ -5,6 +5,9 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/caporal}
     username: ${SPRING_DATASOURCE_USERNAME:caporal}
     password: ${SPRING_DATASOURCE_PASSWORD:}
+  mvc:
+    problemdetails:
+      enabled: true
   jpa:
     open-in-view: false
     hibernate:
@@ -26,3 +29,7 @@ caporal:
     intentos-maximos: 5
     minutos-bloqueo: 15
     solicitudes-por-minuto: 120
+  twilio:
+    account-sid: ${TWILIO_ACCOUNT_SID:}
+    auth-token: ${TWILIO_AUTH_TOKEN:}
+    verify-service-sid: ${TWILIO_VERIFY_SERVICE_SID:}
