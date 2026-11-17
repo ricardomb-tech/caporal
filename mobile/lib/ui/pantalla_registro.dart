@@ -94,8 +94,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       default:
         return [
           _campo(_clave, 'Cree una clave (mínimo 8 caracteres)', oculto: true),
-          Tarjeta(
-            hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+          const Tarjeta(
+            hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Sus datos, en sus manos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               _Punto('Qué guardamos', 'Su celular, el nombre de su negocio y sus anotaciones.'),
