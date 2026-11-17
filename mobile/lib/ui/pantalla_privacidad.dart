@@ -14,6 +14,10 @@ class PantallaPrivacidad extends StatelessWidget {
 
   static const _politica = 'Qué guardamos: su celular, el nombre y municipio de su negocio y sus anotaciones.\n\n'
       'Para qué: guardar su copia de seguridad y mostrarle sus cuentas. Las cifras anónimas solo se usan si usted lo autoriza.\n\n'
+      'Sus clientes: de quien le debe solo se guarda el nombre y, si el cliente lo autoriza, su celular. '
+      'El celular queda solo en este teléfono (no se envía a nuestros servidores), sirve únicamente para '
+      'recordarle pagos y lo puede borrar en cualquier momento. Caporal no presta dinero ni cobra intereses: '
+      'el fiado es mercancía que el cliente paga después.\n\n'
       'Quién responde: su negocio es el Responsable; la Gobernación de Casanare es la Encargada del tratamiento.\n\n'
       'Sus derechos: conocer, actualizar, rectificar y suprimir sus datos y revocar la autorización cuando quiera (Ley 1581 de 2012).';
 

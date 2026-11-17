@@ -35,7 +35,7 @@ class BaseLocal {
   }
 
   /// Versión del esquema. Súbala y agregue su paso en [actualizar] cada vez que cambie una tabla.
-  static const version = 3;
+  static const version = 4;
 
   static Future<void> crear(Database db, int version) async {
     await db.execute('''
@@ -53,6 +53,7 @@ class BaseLocal {
     await db.execute('CREATE INDEX idx_movimiento_creado ON movimiento (creado_en)');
     await _crearCola(db);
     await _crearCatalogo(db);
+    await _crearClientes(db);
   }
 
   static Future<void> actualizar(Database db, int anterior, int nueva) async {
@@ -63,7 +64,19 @@ class BaseLocal {
     if (anterior < 3) {
       await _migrarA3(db);
     }
+    if (anterior < 4) {
+      await _crearClientes(db);
+    }
   }
+
+  /// Celular de los clientes (dato de un tercero): solo con su autorización y solo en el teléfono.
+  static Future<void> _crearClientes(Database db) => db.execute('''
+      CREATE TABLE cliente (
+        nombre TEXT PRIMARY KEY,
+        celular TEXT,
+        autoriza_en INTEGER,
+        ultimo_recordatorio INTEGER
+      )''');
 
   /// Cola de salida única: un renglón por cada cosa pendiente de enviar al servidor
   /// (movimientos de dinero, productos y movimientos de inventario).

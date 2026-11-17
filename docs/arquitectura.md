@@ -55,6 +55,13 @@ La app es offline-first: toda operación se escribe primero en el teléfono. El 
 - **Servidor.** `POST /api/v1/sync/catalogo` es idempotente: confirma lo nuevo y lo repetido; nunca toca un producto de otro negocio. `mov_inventario.producto_id` no tiene llave foránea para no depender del orden de llegada.
 - **Costo.** Cada lectura de cantidad suma movimientos (indexado por producto; suficiente para el volumen de una tienda). Se puede agregar una tabla de saldos si crece.
 
+## ADR-07. Fiado como venta de mercancía y cobro respetuoso
+
+- **Contexto.** Fiar es central en la tienda de barrio, pero no debe confundirse con préstamos de dinero (gota a gota) ni con una cobranza que incomode al cliente; además el celular del cliente es dato personal de un tercero (Ley 1581).
+- **Decisión.** "Fié" usa la misma pantalla de venta: productos, inventario y "Fiado" como forma de pago. No existen campos de interés, mora ni recargos. El recordatorio lo ve el dueño antes de enviarlo y sale de su propio WhatsApp con un texto amable fijo (probado: nunca menciona intereses, mora ni reportes).
+- **Celular del cliente.** Opcional; solo se guarda si el dueño confirma que el cliente lo autorizó (se guarda la fecha); vive solo en el teléfono (tabla `cliente`, no se sincroniza); se puede borrar y se borra con "eliminar mis datos".
+- **Prudencia al cobrar.** Fuera de lunes a viernes 7 a. m.–7 p. m. y sábado 8 a. m.–3 p. m. (domingo nunca) el botón de enviar se desactiva; si se recordó hace menos de 7 días, la app lo advierte. Criterio inspirado en la Ley 2300 de 2023; su aplicación a un comercio que recuerda a su propio cliente está por confirmar con asesoría jurídica.
+
 ## Pendiente por decidir
 
 - Catálogos (clientes y productos) con "último cambio por campo".

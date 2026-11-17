@@ -31,22 +31,29 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   String _medio = 'EFECTIVO';
   bool _guardando = false;
 
-  int get _valor => _digitos.isEmpty ? 0 : int.parse(_digitos);
-  bool get _esFiado => widget.tipo == TipoMovimiento.fiado;
-  bool get _esGasto => widget.tipo == TipoMovimiento.gasto;
-  bool get _esVenta => widget.tipo == TipoMovimiento.venta;
+  /// Fiar es vender mercancía que se paga después (nunca un préstamo de dinero ni con intereses):
+  /// por eso usa la misma pantalla de venta, con productos e inventario, y "Fiado" como forma de pago.
+  late bool _fiado = widget.tipo == TipoMovimiento.fiado;
 
-  String get _titulo => switch (widget.tipo) {
+  int get _valor => _digitos.isEmpty ? 0 : int.parse(_digitos);
+  TipoMovimiento get _tipo => _fiado ? TipoMovimiento.fiado : widget.tipo;
+  bool get _esFiado => _tipo == TipoMovimiento.fiado;
+  bool get _esGasto => _tipo == TipoMovimiento.gasto;
+
+  /// Venta de contado o fiada: se eligen productos y se descuentan del inventario.
+  bool get _esVenta => widget.tipo == TipoMovimiento.venta || widget.tipo == TipoMovimiento.fiado;
+
+  String get _titulo => switch (_tipo) {
         TipoMovimiento.venta => 'Vendí',
         TipoMovimiento.gasto => 'Gasté',
-        TipoMovimiento.fiado => 'Fié',
+        TipoMovimiento.fiado => 'Vendí fiado',
         TipoMovimiento.abono => 'Me pagaron',
       };
 
-  String get _subtitulo => switch (widget.tipo) {
+  String get _subtitulo => switch (_tipo) {
         TipoMovimiento.venta => 'Toque un producto o escriba el valor',
         TipoMovimiento.gasto => 'Anote lo que pagó hoy',
-        TipoMovimiento.fiado => 'Anote lo que le quedan debiendo',
+        TipoMovimiento.fiado => 'Lo que se lleva y quién lo paga después',
         TipoMovimiento.abono => 'Anote lo que le pagaron',
       };
 
@@ -93,11 +100,11 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   Future<void> _guardar() async {
     setState(() => _guardando = true);
     final m = await context.read<Repositorio>().registrar(
-          tipo: widget.tipo,
+          tipo: _tipo,
           valor: _valor,
           descripcion: _descripcion,
           clienteNombre: (_esFiado || widget.tipo == TipoMovimiento.abono) ? _cliente.text.trim() : null,
-          medioPago: (_esVenta || _esGasto) ? _medio : null,
+          medioPago: _esFiado ? null : ((_esVenta || _esGasto) ? _medio : null),
           lineas: _esVenta ? _lineas : const [],
         );
     if (!mounted) return;
@@ -152,8 +159,20 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Wrap(spacing: 8, children: [
-                  ChipCaporal('Efectivo', seleccionado: _medio == 'EFECTIVO', alTocar: () => setState(() => _medio = 'EFECTIVO')),
-                  ChipCaporal('Bre-B', seleccionado: _medio == 'BREB', alTocar: () => setState(() => _medio = 'BREB')),
+                  ChipCaporal('Efectivo',
+                      seleccionado: !_esFiado && _medio == 'EFECTIVO',
+                      alTocar: () => setState(() {
+                            _medio = 'EFECTIVO';
+                            _fiado = false;
+                          })),
+                  ChipCaporal('Bre-B',
+                      seleccionado: !_esFiado && _medio == 'BREB',
+                      alTocar: () => setState(() {
+                            _medio = 'BREB';
+                            _fiado = false;
+                          })),
+                  if (_esVenta)
+                    ChipCaporal('Fiado', seleccionado: _esFiado, alTocar: () => setState(() => _fiado = true)),
                 ]),
               ),
             Expanded(

@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'data/base_local.dart';
+import 'data/clientes.dart';
 import 'data/cola_salida.dart';
 import 'data/inventario.dart';
 import 'data/repositorio.dart';
@@ -32,6 +33,7 @@ Future<void> main() async {
     providers: [
       ChangeNotifierProvider.value(value: repo),
       ChangeNotifierProvider.value(value: inventario),
+      ChangeNotifierProvider(create: (_) => Clientes(db)),
       ChangeNotifierProvider.value(value: sesion),
       ChangeNotifierProvider.value(value: sync),
     ],

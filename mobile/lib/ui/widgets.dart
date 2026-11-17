@@ -62,7 +62,9 @@ class BotonAtras extends StatelessWidget {
       );
 }
 
-enum EstiloBoton { primario, contorno, peligro }
+enum EstiloBoton { primario, contorno, peligro, whatsapp }
+
+const _verdeWhatsapp = Color(0xFF25D366);
 
 class BotonCaporal extends StatelessWidget {
   final String texto;
@@ -94,7 +96,11 @@ class BotonCaporal extends StatelessWidget {
     return FilledButton(
       onPressed: alTocar,
       style: FilledButton.styleFrom(
-        backgroundColor: estilo == EstiloBoton.peligro ? Colores.rojo : Colores.verde,
+        backgroundColor: switch (estilo) {
+          EstiloBoton.peligro => Colores.rojo,
+          EstiloBoton.whatsapp => _verdeWhatsapp,
+          _ => Colores.verde,
+        },
         minimumSize: const Size.fromHeight(58),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),

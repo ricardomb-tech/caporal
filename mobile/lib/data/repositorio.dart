@@ -210,6 +210,10 @@ class Repositorio extends ChangeNotifier {
           {'nombre': p.nombre, 'precio': p.precio, 'cantidad': p.controlaStock ? p.stock : null}
       ],
       'movimientosDeInventario': inv.map((e) => e.aJson()).toList(),
+      'clientes': [
+        for (final c in await db.query('cliente'))
+          {'nombre': c['nombre'], 'celular': c['celular']}
+      ],
     });
   }
 
@@ -217,6 +221,7 @@ class Repositorio extends ChangeNotifier {
   Future<void> borrarTodo() async {
     await db.transaction((tx) async {
       await tx.delete('cola');
+      await tx.delete('cliente');
       await tx.delete('mov_inventario');
       await tx.delete('movimiento');
       await tx.delete('producto');
