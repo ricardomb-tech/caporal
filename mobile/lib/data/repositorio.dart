@@ -47,9 +47,11 @@ class Repositorio extends ChangeNotifier {
     String? clienteNombre,
     String? medioPago,
     String? reversoDe,
+    String? referencia,
     List<LineaVenta> lineas = const [],
   }) async {
-    final m = _nuevo(tipo, valor, descripcion, clienteNombre, medioPago, reversoDe);
+    final ref = (referencia == null || referencia.trim().isEmpty) ? null : normalizarReferencia(referencia);
+    final m = _nuevo(tipo, valor, descripcion, clienteNombre, medioPago, reversoDe, referencia: ref);
     await db.transaction((tx) async {
       await _guardar(tx, m);
       await inventario.aplicarLineas(tx, m, lineas);
@@ -60,7 +62,7 @@ class Repositorio extends ChangeNotifier {
   }
 
   Movimiento _nuevo(TipoMovimiento tipo, int valor, String? descripcion, String? clienteNombre, String? medioPago,
-          String? reversoDe) =>
+          String? reversoDe, {String? referencia}) =>
       Movimiento(
         id: const Uuid().v4(),
         tipo: tipo,
@@ -71,6 +73,7 @@ class Repositorio extends ChangeNotifier {
         dispositivoId: dispositivoId,
         creadoEn: DateTime.now().toUtc(),
         reversoDe: reversoDe,
+        referencia: referencia,
       );
 
   Future<void> _guardar(DatabaseExecutor tx, Movimiento m) async {
@@ -158,6 +161,21 @@ class Repositorio extends ChangeNotifier {
   /// Ids de movimientos que todavía no se han enviado al servidor.
   Future<Set<String>> idsPendientes() => cola.ids(TipoCola.movimiento);
 
+  /// Forma única de escribir un número de comprobante: sin espacios ni puntos y en mayúsculas.
+  static String normalizarReferencia(String r) => r.replaceAll(RegExp(r'[\s.]'), '').toUpperCase();
+
+  /// El pago vigente (no corregido) que ya usó ese comprobante, si existe. Evita registrar dos veces el mismo pago.
+  Future<Movimiento?> pagoConComprobante(String referencia) async {
+    final ref = normalizarReferencia(referencia);
+    if (ref.isEmpty) return null;
+    final filas = await db.rawQuery('''
+      SELECT m.* FROM movimiento m
+      WHERE m.tipo = 'abono' AND m.reverso_de IS NULL AND m.referencia = ?
+        AND NOT EXISTS (SELECT 1 FROM movimiento r WHERE r.reverso_de = m.id)
+      LIMIT 1''', [ref]);
+    return filas.isEmpty ? null : Movimiento.deFila(filas.first);
+  }
+
   Future<bool> yaCorregido(String id) async {
     final r = await db.rawQuery('SELECT COUNT(*) AS n FROM movimiento WHERE reverso_de = ?', [id]);
     return ((r.first['n'] as int?) ?? 0) > 0;
@@ -167,7 +185,7 @@ class Repositorio extends ChangeNotifier {
   /// y deshace su efecto en el inventario (una venta devuelve unidades; un pedido las saca).
   Future<Movimiento> corregir(Movimiento original) async {
     final m = _nuevo(original.tipo, original.valor, original.descripcion, original.clienteNombre, original.medioPago,
-        original.id);
+        original.id, referencia: original.referencia);
     await db.transaction((tx) async {
       await _guardar(tx, m);
       await inventario.revertirLineas(tx, original.id, m.id);
@@ -222,6 +240,7 @@ class Repositorio extends ChangeNotifier {
     await db.transaction((tx) async {
       await tx.delete('cola');
       await tx.delete('cliente');
+      await tx.delete('comprobante');
       await tx.delete('mov_inventario');
       await tx.delete('movimiento');
       await tx.delete('producto');

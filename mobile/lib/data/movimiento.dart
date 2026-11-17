@@ -12,6 +12,9 @@ class Movimiento {
   final DateTime creadoEn;
   final String? reversoDe;
 
+  /// Número del comprobante de un pago digital (opcional).
+  final String? referencia;
+
   const Movimiento({
     required this.id,
     required this.tipo,
@@ -22,6 +25,7 @@ class Movimiento {
     this.clienteNombre,
     this.medioPago,
     this.reversoDe,
+    this.referencia,
   });
 
   Map<String, Object?> aFila() => {
@@ -34,6 +38,7 @@ class Movimiento {
         'dispositivo_id': dispositivoId,
         'creado_en': creadoEn.toUtc().millisecondsSinceEpoch,
         'reverso_de': reversoDe,
+        'referencia': referencia,
       };
 
   factory Movimiento.deFila(Map<String, Object?> f) => Movimiento(
@@ -46,6 +51,7 @@ class Movimiento {
         dispositivoId: f['dispositivo_id'] as String,
         creadoEn: DateTime.fromMillisecondsSinceEpoch(f['creado_en'] as int, isUtc: true),
         reversoDe: f['reverso_de'] as String?,
+        referencia: f['referencia'] as String?,
       );
 
   /// Formato que espera la API en /api/v1/sync/push.
@@ -59,5 +65,6 @@ class Movimiento {
         'dispositivoId': dispositivoId,
         'creadoEnDispositivo': creadoEn.toUtc().toIso8601String(),
         'reversoDe': reversoDe,
+        'referencia': referencia,
       };
 }

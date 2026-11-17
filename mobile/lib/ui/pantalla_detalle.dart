@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../data/movimiento.dart';
 import '../data/repositorio.dart';
 import '../formato.dart';
+import 'foto_comprobante.dart';
 import 'pantalla_historial.dart';
+import 'pantalla_registrar_pago.dart';
 import 'pantalla_registrar.dart';
 import 'tema.dart';
 import 'widgets.dart';
@@ -56,7 +58,8 @@ class PantallaDetalle extends StatelessWidget {
         final filas = <(String, String, Color?)>[
           ('Fecha', _fecha(f), null),
           ('Hora', '${f.hour % 12 == 0 ? 12 : f.hour % 12}:${f.minute.toString().padLeft(2, '0')} ${f.hour < 12 ? 'a. m.' : 'p. m.'}', null),
-          if (movimiento.medioPago != null) ('Medio de pago', movimiento.medioPago == 'BREB' ? 'Bre-B' : 'Efectivo', null),
+          if (movimiento.medioPago != null) ('Forma de pago', nombreFormaDePago(movimiento.medioPago), null),
+          if (movimiento.referencia != null) ('Comprobante', movimiento.referencia!, null),
           ('Cliente', movimiento.clienteNombre ?? 'Sin cliente', null),
           ('Envío', pendiente ? 'Pendiente' : 'Enviado', pendiente ? Colores.ambarTexto : null),
         ];
@@ -72,6 +75,7 @@ class PantallaDetalle extends StatelessWidget {
                   Text(movimiento.descripcion!, style: const TextStyle(fontSize: 15, color: Colores.gris)),
               ]),
             ),
+            FotoComprobante(movimientoId: movimiento.id),
             Tarjeta(
               relleno: const EdgeInsets.symmetric(horizontal: 16),
               hijo: Column(children: [

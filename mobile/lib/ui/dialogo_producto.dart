@@ -3,14 +3,20 @@ import 'package:provider/provider.dart';
 
 import '../data/inventario.dart';
 import '../data/producto.dart';
+import 'pantalla_nuevo_producto.dart';
 import 'tema.dart';
 
 /// Crear o editar un producto. Devuelve el producto guardado, o null si se canceló o se quitó.
 /// [conCantidadInicial] en false cuando la cantidad la pone otra anotación (por ejemplo, un pedido que llegó).
-Future<Producto?> mostrarDialogoProducto(BuildContext context, {Producto? producto, bool conCantidadInicial = true}) =>
-    showDialog<Producto>(
-        context: context,
-        builder: (_) => _DialogoProducto(producto: producto, conCantidadInicial: conCantidadInicial));
+/// Crear abre el formulario guiado paso a paso; editar abre un diálogo corto.
+Future<Producto?> mostrarDialogoProducto(BuildContext context, {Producto? producto, bool conCantidadInicial = true}) {
+  if (producto == null) {
+    return Navigator.push<Producto>(
+        context, MaterialPageRoute(builder: (_) => PantallaNuevoProducto(conCantidadInicial: conCantidadInicial)));
+  }
+  return showDialog<Producto>(
+      context: context, builder: (_) => _DialogoProducto(producto: producto, conCantidadInicial: conCantidadInicial));
+}
 
 class _DialogoProducto extends StatefulWidget {
   final Producto? producto;

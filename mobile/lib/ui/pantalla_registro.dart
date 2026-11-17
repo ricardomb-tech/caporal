@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../sync/sesion.dart';
+import 'formulario_guiado.dart';
 import 'tema.dart';
 import 'widgets.dart';
 
-/// Registro en tres pasos: sus datos, su negocio y la autorización de datos personales (Ley 1581).
+/// Tipos de negocio que se ofrecen al registrarse y en Mi negocio.
+class PantallaRegistroTipos {
+  static const tipos = ['Tienda', 'Restaurante', 'Taller', 'Ambulante', 'Otro'];
+}
+
+/// Crear la cuenta paso a paso: una pregunta por pantalla, con qué va y un ejemplo.
+/// Al final, la autorización de datos personales (Ley 1581).
 class PantallaRegistro extends StatefulWidget {
   const PantallaRegistro({super.key});
 
@@ -14,34 +21,22 @@ class PantallaRegistro extends StatefulWidget {
 }
 
 class _PantallaRegistroState extends State<PantallaRegistro> {
-  static const _tipos = ['Tienda', 'Restaurante', 'Taller', 'Ambulante', 'Otro'];
 
-  int _paso = 0;
   final _nombre = TextEditingController();
   final _celular = TextEditingController();
   final _correo = TextEditingController();
   final _negocio = TextEditingController();
   final _municipio = TextEditingController(text: 'Yopal');
   final _clave = TextEditingController();
-  String _tipo = _tipos.first;
+  String? _tipo;
   bool _acepta = false;
   bool _cifras = false;
-  bool _cargando = false;
-  String? _error;
 
-  bool get _paso1Ok => _nombre.text.trim().length >= 3 && RegExp(r'^3\d{9}$').hasMatch(_celular.text.trim());
-  bool get _paso2Ok => _negocio.text.trim().length >= 2 && _municipio.text.trim().isNotEmpty;
-  bool get _paso3Ok => _clave.text.length >= 8 && _acepta;
-
-  Future<void> _crear() async {
+  Future<String?> _crear() async {
     final sesion = context.read<Sesion>();
     final navegador = Navigator.of(context);
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
     final error = await sesion.registrar(
-      celular: _celular.text.trim(),
+      celular: _celular.text.replaceAll(' ', '').trim(),
       nombreNegocio: _negocio.text.trim(),
       municipio: _municipio.text.trim(),
       clave: _clave.text,
@@ -51,114 +46,116 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       tipoNegocio: _tipo,
       compartirCifras: _cifras,
     );
-    if (!mounted) return;
-    if (error == null) {
-      navegador.popUntil((r) => r.isFirst);
-    } else {
-      setState(() {
-        _cargando = false;
-        _error = error;
-      });
-    }
+    if (error == null) navegador.popUntil((r) => r.isFirst);
+    return error;
   }
 
-  Widget _campo(TextEditingController c, String etiqueta,
-      {TextInputType? tipo, bool oculto = false, TextCapitalization mayus = TextCapitalization.none}) {
-    return TextField(
-      controller: c,
-      keyboardType: tipo,
-      obscureText: oculto,
-      textCapitalization: mayus,
-      onChanged: (_) => setState(() {}),
-      decoration: InputDecoration(labelText: etiqueta),
-    );
-  }
-
-  List<Widget> _contenido() {
-    switch (_paso) {
-      case 0:
-        return [
-          _campo(_nombre, 'Su nombre completo', mayus: TextCapitalization.words),
-          _campo(_celular, 'Su celular (10 números)', tipo: TextInputType.phone),
-          _campo(_correo, 'Correo (opcional)', tipo: TextInputType.emailAddress),
-        ];
-      case 1:
-        return [
-          _campo(_negocio, 'Nombre de su negocio', mayus: TextCapitalization.words),
-          const Text('¿Qué tipo de negocio es?', style: TextStyle(fontSize: 14, color: Colores.gris, fontWeight: FontWeight.w500)),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final t in _tipos) ChipCaporal(t, seleccionado: t == _tipo, alTocar: () => setState(() => _tipo = t)),
+  List<PasoGuiado> get _pasos => [
+        PasoTexto(
+          pregunta: '¿Cómo se llama?',
+          ayuda: 'Escriba su nombre completo. Lo usamos para saludarlo y para firmar los recordatorios de cobro.',
+          ejemplo: 'Marta Pérez Rodríguez',
+          etiqueta: 'Su nombre completo',
+          controlador: _nombre,
+          mayusculas: TextCapitalization.words,
+          validador: (v) => v.length < 3 ? 'Escriba su nombre completo, por favor.' : null,
+        ),
+        PasoTexto(
+          pregunta: '¿Cuál es su celular?',
+          ayuda: 'Será su usuario para entrar. Son 10 números, empieza por 3 y va sin espacios ni guiones.',
+          ejemplo: '3101234567',
+          etiqueta: 'Su celular',
+          controlador: _celular,
+          teclado: TextInputType.phone,
+          validador: (v) => RegExp(r'^3\d{9}$').hasMatch(v.replaceAll(' ', ''))
+              ? null
+              : 'El celular debe tener 10 números y empezar por 3.',
+        ),
+        PasoTexto(
+          pregunta: '¿Tiene correo electrónico?',
+          ayuda: 'Es opcional. Nos sirve para ayudarle si un día no puede entrar.',
+          ejemplo: 'marta@gmail.com',
+          etiqueta: 'Correo (opcional)',
+          controlador: _correo,
+          teclado: TextInputType.emailAddress,
+          opcional: true,
+          validador: (v) => v.contains('@') && v.contains('.') ? null : 'Revise el correo: le falta la @ o el punto.',
+        ),
+        PasoTexto(
+          pregunta: '¿Cómo se llama su negocio?',
+          ayuda: 'El nombre con el que lo conocen sus clientes. Aparece en la app y en los recordatorios de cobro.',
+          ejemplo: 'Tienda La Esperanza',
+          etiqueta: 'Nombre del negocio',
+          controlador: _negocio,
+          mayusculas: TextCapitalization.words,
+          validador: (v) => v.length < 2 ? 'Escriba el nombre del negocio.' : null,
+        ),
+        PasoOpciones(
+          pregunta: '¿Qué tipo de negocio es?',
+          ayuda: 'Elija el que más se parezca. Nos ayuda a mostrarle lo que más le sirve.',
+          opciones: PantallaRegistroTipos.tipos,
+          valor: () => _tipo,
+          alElegir: (t) => _tipo = t,
+        ),
+        PasoTexto(
+          pregunta: '¿En qué municipio está?',
+          ayuda: 'El municipio donde queda su negocio.',
+          ejemplo: 'Yopal, Aguazul, Villanueva…',
+          etiqueta: 'Municipio',
+          controlador: _municipio,
+          mayusculas: TextCapitalization.words,
+        ),
+        PasoTexto(
+          pregunta: 'Cree una clave',
+          ayuda: 'Mínimo 8 letras o números. Que sea fácil de recordar para usted y difícil de adivinar: '
+              'no use su celular ni su fecha de nacimiento. Solo se la pedimos una vez en este teléfono.',
+          etiqueta: 'Su clave',
+          controlador: _clave,
+          oculto: true,
+          validador: (v) {
+            if (v.length < 8) return 'La clave debe tener mínimo 8 caracteres.';
+            if (v == _celular.text.trim()) return 'No use su celular como clave.';
+            return null;
+          },
+        ),
+        PasoContenido(
+          pregunta: 'Sus datos, en sus manos',
+          ayuda: 'Lea qué guardamos y para qué. Para crear la cuenta necesitamos su autorización.',
+          validador: () => _acepta ? null : 'Para crear la cuenta marque que autoriza el tratamiento de sus datos.',
+          contenido: (context, alCambiar) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Tarjeta(
+              hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _Punto('Qué guardamos', 'Su celular, el nombre de su negocio y sus anotaciones.'),
+                _Punto('Para qué', 'Para guardar su copia de seguridad y mostrarle sus cuentas.'),
+                _Punto('Quién responde',
+                    'Su negocio es el responsable; la Gobernación de Casanare es la encargada del tratamiento.'),
+                _Punto('Sus derechos', 'Conocer, corregir y borrar sus datos cuando quiera (Ley 1581 de 2012).'),
+              ]),
+            ),
+            CheckboxListTile(
+              value: _acepta,
+              onChanged: (v) => setState(() {
+                _acepta = v ?? false;
+                alCambiar();
+              }),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Autorizo el tratamiento de mis datos personales'),
+            ),
+            CheckboxListTile(
+              value: _cifras,
+              onChanged: (v) => setState(() => _cifras = v ?? false),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Compartir cifras anónimas para estudios del territorio (opcional)'),
+            ),
           ]),
-          _campo(_municipio, 'Municipio', mayus: TextCapitalization.words),
-        ];
-      default:
-        return [
-          _campo(_clave, 'Cree una clave (mínimo 8 caracteres)', oculto: true),
-          const Tarjeta(
-            hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Sus datos, en sus manos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              _Punto('Qué guardamos', 'Su celular, el nombre de su negocio y sus anotaciones.'),
-              _Punto('Para qué', 'Para guardar su copia de seguridad y mostrarle sus cuentas.'),
-              _Punto('Quién responde', 'Su negocio es el responsable; la Gobernación de Casanare es la encargada del tratamiento.'),
-              _Punto('Sus derechos', 'Conocer, corregir y borrar sus datos cuando quiera (Ley 1581 de 2012).'),
-            ]),
-          ),
-          CheckboxListTile(
-            value: _acepta,
-            onChanged: (v) => setState(() => _acepta = v ?? false),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: const Text('Autorizo el tratamiento de mis datos personales'),
-          ),
-          CheckboxListTile(
-            value: _cifras,
-            onChanged: (v) => setState(() => _cifras = v ?? false),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: const Text('Compartir cifras anónimas para estudios del territorio (opcional)'),
-          ),
-        ];
-    }
-  }
+        ),
+      ];
 
   @override
-  Widget build(BuildContext context) {
-    final titulos = ['Sus datos', 'Su negocio', 'Autorización de datos'];
-    final ok = [_paso1Ok, _paso2Ok, _paso3Ok][_paso];
-    return Pantalla(
-      titulo: titulos[_paso],
-      subtitulo: 'Paso ${_paso + 1} de 3',
-      hijos: [
-        Row(children: [
-          for (var i = 0; i < 3; i++)
-            Expanded(
-              child: Container(
-                height: 6,
-                margin: EdgeInsets.only(right: i < 2 ? 6 : 0),
-                decoration: BoxDecoration(
-                    color: i <= _paso ? Colores.verde : const Color(0xFFD5D9D3), borderRadius: BorderRadius.circular(3)),
-              ),
-            ),
-        ]),
-        ..._contenido(),
-        if (_error != null) Text(_error!, style: const TextStyle(color: Colores.rojo, fontSize: 15)),
-      ],
-      pie: Row(children: [
-        if (_paso > 0) ...[
-          Expanded(child: BotonCaporal('Atrás', estilo: EstiloBoton.contorno, alTocar: () => setState(() => _paso--))),
-          const SizedBox(width: 12),
-        ],
-        Expanded(
-          flex: 2,
-          child: BotonCaporal(
-            _paso < 2 ? 'Continuar' : (_cargando ? 'Un momento…' : 'Crear mi cuenta'),
-            alTocar: !ok || _cargando ? null : () => _paso < 2 ? setState(() => _paso++) : _crear(),
-          ),
-        ),
-      ]),
-    );
-  }
+  Widget build(BuildContext context) =>
+      FormularioGuiado(titulo: 'Crear mi cuenta', pasos: _pasos, textoFinal: 'Crear mi cuenta', alTerminar: _crear);
 }
 
 class _Punto extends StatelessWidget {

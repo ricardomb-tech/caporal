@@ -35,6 +35,9 @@ public class Movimiento implements Persistable<UUID> {
     private Instant creadoEnDispositivo;
     @Column(name = "reverso_de", updatable = false)
     private UUID reversoDe;
+    /** Número del comprobante de un pago digital (opcional). */
+    @Column(updatable = false)
+    private String referencia;
     @Column(name = "recibido_en", nullable = false, updatable = false)
     private Instant recibidoEn;
 
@@ -52,6 +55,7 @@ public class Movimiento implements Persistable<UUID> {
         this.dispositivoId = dto.dispositivoId();
         this.creadoEnDispositivo = dto.creadoEnDispositivo();
         this.reversoDe = dto.reversoDe();
+        this.referencia = dto.referencia();
         this.recibidoEn = recibidoEn;
     }
 
@@ -64,7 +68,7 @@ public class Movimiento implements Persistable<UUID> {
 
     public SyncDtos.MovimientoDto aDto() {
         return new SyncDtos.MovimientoDto(id, tipo, valor, descripcion, clienteNombre, medioPago,
-                dispositivoId, creadoEnDispositivo, reversoDe);
+                dispositivoId, creadoEnDispositivo, reversoDe, referencia);
     }
 
     public Instant getRecibidoEn() { return recibidoEn; }

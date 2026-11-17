@@ -35,7 +35,7 @@ class BaseLocal {
   }
 
   /// Versión del esquema. Súbala y agregue su paso en [actualizar] cada vez que cambie una tabla.
-  static const version = 4;
+  static const version = 5;
 
   static Future<void> crear(Database db, int version) async {
     await db.execute('''
@@ -48,12 +48,14 @@ class BaseLocal {
         medio_pago TEXT,
         dispositivo_id TEXT NOT NULL,
         creado_en INTEGER NOT NULL,
-        reverso_de TEXT
+        reverso_de TEXT,
+        referencia TEXT
       )''');
     await db.execute('CREATE INDEX idx_movimiento_creado ON movimiento (creado_en)');
     await _crearCola(db);
     await _crearCatalogo(db);
     await _crearClientes(db);
+    await _crearComprobantes(db);
   }
 
   static Future<void> actualizar(Database db, int anterior, int nueva) async {
@@ -67,7 +69,19 @@ class BaseLocal {
     if (anterior < 4) {
       await _crearClientes(db);
     }
+    if (anterior < 5) {
+      await db.execute('ALTER TABLE movimiento ADD COLUMN referencia TEXT');
+      await _crearComprobantes(db);
+    }
   }
+
+  /// Foto del comprobante de un pago: solo en el teléfono (no se envía al servidor).
+  static Future<void> _crearComprobantes(Database db) => db.execute('''
+      CREATE TABLE comprobante (
+        movimiento_id TEXT PRIMARY KEY,
+        archivo TEXT NOT NULL,
+        creado_en INTEGER NOT NULL
+      )''');
 
   /// Celular de los clientes (dato de un tercero): solo con su autorización y solo en el teléfono.
   static Future<void> _crearClientes(Database db) => db.execute('''

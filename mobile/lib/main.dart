@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'data/base_local.dart';
 import 'data/clientes.dart';
+import 'data/comprobantes.dart';
 import 'data/cola_salida.dart';
 import 'data/inventario.dart';
 import 'data/repositorio.dart';
@@ -34,6 +35,7 @@ Future<void> main() async {
       ChangeNotifierProvider.value(value: repo),
       ChangeNotifierProvider.value(value: inventario),
       ChangeNotifierProvider(create: (_) => Clientes(db)),
+      ChangeNotifierProvider(create: (_) => Comprobantes(db)),
       ChangeNotifierProvider.value(value: sesion),
       ChangeNotifierProvider.value(value: sync),
     ],

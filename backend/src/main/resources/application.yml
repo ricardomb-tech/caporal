@@ -26,7 +26,7 @@ caporal:
     secret: ${CAPORAL_JWT_SECRET:}
     minutos-vigencia: 15
   sesion:
-    dias-renovacion: 60
+    dias-renovacion: 365
   seguridad:
     intentos-maximos: 5
     minutos-bloqueo: 15

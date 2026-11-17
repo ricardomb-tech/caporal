@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../data/comprobantes.dart';
 import '../data/repositorio.dart';
 import '../sync/sesion.dart';
 import 'pantalla_mis_datos.dart';
@@ -99,6 +100,7 @@ class _PantallaEliminarState extends State<PantallaEliminar> {
   Future<void> _eliminar() async {
     final sesion = context.read<Sesion>();
     final repo = context.read<Repositorio>();
+    final comprobantes = context.read<Comprobantes>();
     final navegador = Navigator.of(context);
     setState(() {
       _borrando = true;
@@ -116,6 +118,7 @@ class _PantallaEliminarState extends State<PantallaEliminar> {
       return;
     }
     await repo.borrarTodo();
+    await comprobantes.borrarArchivos();
     navegador.popUntil((r) => r.isFirst);
     await sesion.olvidarTodo();
   }

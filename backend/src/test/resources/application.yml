@@ -17,7 +17,7 @@ caporal:
     secret: secreto-solo-para-pruebas-con-mas-de-32-caracteres
     minutos-vigencia: 15
   sesion:
-    dias-renovacion: 60
+    dias-renovacion: 365
   seguridad:
     intentos-maximos: 3
     minutos-bloqueo: 15
