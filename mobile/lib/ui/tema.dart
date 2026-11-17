@@ -15,14 +15,15 @@ class Colores {
 
 ThemeData temaCaporal() => ThemeData(
       useMaterial3: true,
+      fontFamily: 'Inter',
       colorScheme: ColorScheme.fromSeed(seedColor: Colores.verde, primary: Colores.verde),
       scaffoldBackgroundColor: Colores.fondo,
       appBarTheme: const AppBarTheme(backgroundColor: Colores.fondo, foregroundColor: Colores.texto, elevation: 0),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(60),
+          minimumSize: const Size.fromHeight(58),
           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

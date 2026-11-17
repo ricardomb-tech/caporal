@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../sync/sesion.dart';
+import 'logo_caporal.dart';
 import 'tema.dart';
 import 'widgets.dart';
 
@@ -14,7 +15,7 @@ class PantallaSplash extends StatelessWidget {
         backgroundColor: Colores.verde,
         body: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            LogoCaporal(tam: 110),
+            LogoCaporal(tam: 110, variante: VarianteLogo.sinFondo),
             SizedBox(height: 20),
             Text('Caporal', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)),
             SizedBox(height: 6),

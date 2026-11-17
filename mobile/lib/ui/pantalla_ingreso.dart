@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../sync/sesion.dart';
+import 'campo_caporal.dart';
+import 'logo_caporal.dart';
 import 'pantalla_recuperar.dart';
 import 'pantalla_registro.dart';
 import 'tema.dart';
@@ -40,50 +42,78 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 16),
-            const LogoCaporal(tam: 64, color: Colores.verde),
-            const SizedBox(height: 16),
-            const Text('Bienvenido', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-            const Text('Entre a las cuentas de su negocio', style: TextStyle(fontSize: 16, color: Colores.gris)),
-            const SizedBox(height: 28),
-            TextField(
-                controller: _celular,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Su celular')),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _clave,
-              obscureText: !_ver,
-              decoration: InputDecoration(
-                labelText: 'Su clave',
-                suffixIcon: IconButton(
-                    icon: Icon(_ver ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                    onPressed: () => setState(() => _ver = !_ver)),
-              ),
+        child: CustomScrollView(slivers: [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const LogoCaporal(tam: 64),
+                const SizedBox(height: 14),
+                const Text('Bienvenido de nuevo',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colores.texto)),
+                const SizedBox(height: 12),
+                const Text('Entre con su celular y su clave.', style: TextStyle(fontSize: 15, color: Colores.gris)),
+                const SizedBox(height: 32),
+                CampoCaporal(
+                    etiqueta: 'Celular',
+                    icono: Icons.person_outline,
+                    controlador: _celular,
+                    pista: '310 123 4567',
+                    teclado: TextInputType.phone),
+                const SizedBox(height: 14),
+                CampoCaporal(
+                  etiqueta: 'Clave',
+                  icono: Icons.lock_outline,
+                  controlador: _clave,
+                  oculto: !_ver,
+                  sufijo: IconButton(
+                      icon: Icon(_ver ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      onPressed: () => setState(() => _ver = !_ver)),
+                ),
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () =>
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaRecuperar())),
+                  child: const Text('¿Olvidó su clave?',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colores.verde)),
+                ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(_error!, style: const TextStyle(color: Colores.rojo, fontSize: 15)),
+                  ),
+                const SizedBox(height: 14),
+                BotonCaporal(_cargando ? 'Un momento…' : 'Entrar', alTocar: _cargando ? null : _entrar),
+                const Spacer(),
+                const _Confianza(),
+                const SizedBox(height: 14),
+                BotonCaporal('Soy nuevo, crear mi cuenta',
+                    estilo: EstiloBoton.contorno,
+                    alTocar: () =>
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaRegistro()))),
+              ]),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaRecuperar())),
-                child: const Text('¿Olvidó su clave?'),
-              ),
-            ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(_error!, style: const TextStyle(color: Colores.rojo, fontSize: 15)),
-              ),
-            BotonCaporal(_cargando ? 'Un momento…' : 'Entrar', alTocar: _cargando ? null : _entrar),
-            const SizedBox(height: 8),
-            BotonCaporal('Soy nuevo, crear mi cuenta',
-                estilo: EstiloBoton.contorno,
-                alTocar: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaRegistro()))),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
+}
+
+/// Aviso verde de confianza al pie del ingreso.
+class _Confianza extends StatelessWidget {
+  const _Confianza();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(color: Colores.verdeClaro, borderRadius: BorderRadius.circular(12)),
+        child: const Row(children: [
+          Icon(Icons.verified_user_outlined, size: 18, color: Colores.verde),
+          SizedBox(width: 8),
+          Text('Sus datos están cifrados y protegidos', style: TextStyle(fontSize: 13, color: Colores.texto)),
+        ]),
+      );
 }

@@ -82,10 +82,10 @@ class BotonCaporal extends StatelessWidget {
       return OutlinedButton(
         onPressed: alTocar,
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(56),
+          minimumSize: const Size.fromHeight(58),
           foregroundColor: Colores.verde,
           side: const BorderSide(color: Colores.verde, width: 1.5),
-          shape: const StadiumBorder(),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         child: hijo,
@@ -95,8 +95,8 @@ class BotonCaporal extends StatelessWidget {
       onPressed: alTocar,
       style: FilledButton.styleFrom(
         backgroundColor: estilo == EstiloBoton.peligro ? Colores.rojo : Colores.verde,
-        minimumSize: const Size.fromHeight(56),
-        shape: const StadiumBorder(),
+        minimumSize: const Size.fromHeight(58),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       child: hijo,
     );
@@ -283,34 +283,4 @@ class NavFlotante extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Logo: la C de Caporal abraza un sol ámbar (el sol del llano y la moneda del negocio).
-class LogoCaporal extends StatelessWidget {
-  final double tam;
-  final Color color;
-  const LogoCaporal({super.key, this.tam = 96, this.color = Colors.white});
-
-  @override
-  Widget build(BuildContext context) => CustomPaint(size: Size(tam, tam), painter: _LogoPintor(color));
-}
-
-class _LogoPintor extends CustomPainter {
-  final Color color;
-  _LogoPintor(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final grosor = size.width * 0.16;
-    final trazo = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = grosor
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc((Offset.zero & size).deflate(grosor / 2), 0.7, 4.88, false, trazo);
-    canvas.drawCircle(size.center(Offset.zero), size.width * 0.15, Paint()..color = Colores.ambar);
-  }
-
-  @override
-  bool shouldRepaint(covariant _LogoPintor viejo) => viejo.color != color;
 }
