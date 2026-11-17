@@ -15,8 +15,12 @@ spring:
 caporal:
   jwt:
     secret: secreto-solo-para-pruebas-con-mas-de-32-caracteres
-    minutos-vigencia: 60
+    minutos-vigencia: 15
+  sesion:
+    dias-renovacion: 60
   seguridad:
     intentos-maximos: 3
     minutos-bloqueo: 15
     solicitudes-por-minuto: 1000
+    ingresos-por-minuto: 1000
+    registros-por-hora: 1000

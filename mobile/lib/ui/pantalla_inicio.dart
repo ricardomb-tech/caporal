@@ -9,6 +9,7 @@ import '../sync/sesion.dart';
 import '../sync/sincronizador.dart';
 import 'pantalla_estado_envio.dart';
 import 'pantalla_historial.dart';
+import 'pantalla_ingreso.dart';
 import 'pantalla_inventario.dart';
 import 'pantalla_registrar.dart';
 import 'tema.dart';
@@ -37,7 +38,7 @@ class PantallaInicio extends StatelessWidget {
           subtitulo: vacio ? 'Su negocio empieza hoy' : 'Hola, bienvenido',
           atras: false,
           hijos: [
-            _EstadoSenal(sync),
+            _EstadoSenal(sync, necesitaEntrar: sesion.necesitaEntrar),
             if (vacio) ...[
               const SizedBox(height: 24),
               Column(children: [
@@ -121,12 +122,27 @@ class PantallaInicio extends StatelessWidget {
 
 class _EstadoSenal extends StatelessWidget {
   final Sincronizador sync;
-  const _EstadoSenal(this.sync);
+  final bool necesitaEntrar;
+  const _EstadoSenal(this.sync, {required this.necesitaEntrar});
 
   @override
   Widget build(BuildContext context) {
     final String texto;
     final Color fondo, color;
+    if (necesitaEntrar && sync.conSenal) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: GestureDetector(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaIngreso())),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(color: Colores.rojoClaro, borderRadius: BorderRadius.circular(16)),
+            child: const Text('Entre de nuevo para guardar su copia de seguridad',
+                style: TextStyle(color: Colores.rojo, fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
+        ),
+      );
+    }
     if (!sync.conSenal) {
       texto = 'Sin señal · todo queda guardado en su celular';
       fondo = Colores.ambarClaro;

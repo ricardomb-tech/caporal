@@ -2,10 +2,18 @@
 # No publica puertos: el Caddy que ya atiende 80/443 en el VPS entra por la red "proxy".
 name: caporal
 
+# Logs acotados para que no llenen el disco.
+x-logs: &logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *logs
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -22,6 +30,7 @@ services:
   api:
     build: ../../backend
     restart: unless-stopped
+    logging: *logs
     depends_on:
       db:
         condition: service_healthy
@@ -30,6 +39,9 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       CAPORAL_JWT_SECRET: ${JWT_SECRET}
+      # Producción: sin documentación pública de la API.
+      SPRINGDOC_API_DOCS_ENABLED: "false"
+      SPRINGDOC_SWAGGER_UI_ENABLED: "false"
       # El VPS es pequeño y lo comparte con otro proyecto: memoria acotada.
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
     healthcheck:

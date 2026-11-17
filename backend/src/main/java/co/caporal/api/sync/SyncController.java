@@ -40,7 +40,7 @@ public class SyncController {
         Instant ahora = Instant.now();
         Set<UUID> ids = new HashSet<>();
         req.movimientos().forEach(m -> ids.add(m.id()));
-        Set<UUID> existentes = new HashSet<>(movimientos.idsExistentes(ids));
+        Set<UUID> existentes = new HashSet<>(movimientos.idsExistentes(usuarioId, ids));
 
         List<UUID> aceptados = new ArrayList<>();
         List<UUID> duplicados = new ArrayList<>();

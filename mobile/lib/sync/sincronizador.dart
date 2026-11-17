@@ -77,7 +77,8 @@ class Sincronizador extends ChangeNotifier {
           ultimaVez = DateTime.now();
           huboError = false;
         case ResultadoEnvio.sesionVencida:
-          await sesion.tokenVencido();
+          // El acceso dura poco: se renueva solo y se sigue enviando. Si no se puede, se espera.
+          if (await sesion.renovar()) continue;
           return false;
         case ResultadoEnvio.error:
           // Sin red o error del servidor: lo pendiente sigue en la cola y se reintenta después.

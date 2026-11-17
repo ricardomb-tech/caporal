@@ -7,18 +7,23 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import 'renovador_sesion.dart';
 
 /// Sesión del negocio y datos del perfil. Todo vive en el almacén seguro del sistema
 /// (Keystore en Android, Keychain en iOS).
 class Sesion extends ChangeNotifier {
   static const _almacen = FlutterSecureStorage();
   static const _claveToken = 'caporal_token';
+  static const _claveRenovacion = 'caporal_renovacion';
   static const _claveNegocio = 'caporal_negocio';
   static const _clavePerfil = 'caporal_perfil';
   static const _clavePin = 'caporal_pin';
   static const _claveBienvenida = 'caporal_bienvenida';
 
   String? token;
+  String? _tokenRenovacion;
+  final _renovador = RenovadorSesion();
+  Future<bool>? _renovacionEnCurso;
   String? nombreNegocio;
 
   // Perfil: se guarda en el teléfono; el servidor solo conoce celular, negocio y municipio.
@@ -35,10 +40,14 @@ class Sesion extends ChangeNotifier {
   bool desbloqueada = false;
 
   bool get activa => nombreNegocio != null;
+
+  /// El negocio sigue trabajando, pero sin sesión en el servidor no se guarda la copia de seguridad.
+  bool get necesitaEntrar => activa && token == null;
   bool get tienePin => _tienePin;
 
   Future<void> cargar() async {
     token = await _almacen.read(key: _claveToken);
+    _tokenRenovacion = await _almacen.read(key: _claveRenovacion);
     nombreNegocio = await _almacen.read(key: _claveNegocio);
     bienvenidaVista = await _almacen.read(key: _claveBienvenida) == '1';
     _tienePin = await _almacen.read(key: _clavePin) != null;
@@ -149,6 +158,8 @@ class Sesion extends ChangeNotifier {
         token = datos['token'] as String;
         nombreNegocio = datos['nombreNegocio'] as String;
         await _almacen.write(key: _claveToken, value: token);
+        _tokenRenovacion = datos['tokenRenovacion'] as String?;
+        await _almacen.write(key: _claveRenovacion, value: _tokenRenovacion);
         await _almacen.write(key: _claveNegocio, value: nombreNegocio);
         desbloqueada = true;
         notifyListeners();
@@ -199,7 +210,11 @@ class Sesion extends ChangeNotifier {
           .delete(Uri.parse('$apiUrl/api/v1/cuenta'), headers: {'Authorization': 'Bearer $token'})
           .timeout(const Duration(seconds: 20));
       if (r.statusCode == 204 || r.statusCode == 200) return null;
-      if (r.statusCode == 401) return 'Su sesión venció. Entre de nuevo para borrar sus datos.';
+      if (r.statusCode == 401) {
+        // El acceso venció: se renueva una vez y se reintenta.
+        if (await renovar()) return await borrarEnServidor();
+        return 'Su sesión venció. Entre de nuevo para borrar sus datos.';
+      }
       return 'No pudimos borrar en este momento. Intente de nuevo.';
     } catch (_) {
       return 'Sin Internet no podemos borrar la copia del servidor. Conéctese e intente de nuevo.';
@@ -207,13 +222,49 @@ class Sesion extends ChangeNotifier {
   }
 
   /// El token venció: se borra, pero el negocio sigue trabajando sin conexión.
+  /// El servidor rechazó el acceso: se pide un par nuevo con el token de renovación.
+  /// Una sola renovación a la vez: si dos llegaran juntas con el mismo token, el servidor
+  /// lo tomaría como robo y cerraría la sesión. Devuelve true si ya hay un acceso nuevo.
+  Future<bool> renovar() => _renovacionEnCurso ??= _renovar().whenComplete(() => _renovacionEnCurso = null);
+
+  Future<bool> _renovar() async {
+    final r = _tokenRenovacion;
+    if (r == null) {
+      // Instalación anterior a la sesión renovable: hay que entrar de nuevo.
+      await tokenVencido();
+      return false;
+    }
+    final (resultado, nuevos) = await _renovador.renovar(r);
+    switch (resultado) {
+      case ResultadoRenovacion.renovada:
+        token = nuevos!.acceso;
+        _tokenRenovacion = nuevos.renovacion;
+        await _almacen.write(key: _claveToken, value: token);
+        await _almacen.write(key: _claveRenovacion, value: _tokenRenovacion);
+        notifyListeners();
+        return true;
+      case ResultadoRenovacion.rechazada:
+        await tokenVencido();
+        return false;
+      case ResultadoRenovacion.sinRed:
+        return false; // se conserva todo y se intenta en la próxima sincronización
+    }
+  }
+
+  /// La sesión ya no sirve en el servidor: se olvidan los tokens, pero el negocio sigue trabajando sin conexión.
   Future<void> tokenVencido() async {
     token = null;
+    _tokenRenovacion = null;
     await _almacen.delete(key: _claveToken);
+    await _almacen.delete(key: _claveRenovacion);
     notifyListeners();
   }
 
   Future<void> cerrar() async {
+    final r = _tokenRenovacion;
+    if (r != null) await _renovador.salir(r);
+    _tokenRenovacion = null;
+    await _almacen.delete(key: _claveRenovacion);
     token = null;
     nombreNegocio = null;
     desbloqueada = false;

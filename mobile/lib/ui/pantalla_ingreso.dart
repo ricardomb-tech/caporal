@@ -36,6 +36,8 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
       _cargando = false;
       _error = error;
     });
+    // Si se abrió desde el aviso del inicio, vuelve allí al entrar.
+    if (error == null && Navigator.canPop(context)) Navigator.pop(context);
   }
 
   @override

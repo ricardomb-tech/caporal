@@ -11,8 +11,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface MovimientoRepository extends JpaRepository<Movimiento, UUID> {
 
-    @Query("select m.id from Movimiento m where m.id in :ids")
-    List<UUID> idsExistentes(@Param("ids") Collection<UUID> ids);
+    /** Ids de ese negocio que ya están guardados (nunca se consulta por ids de otro negocio). */
+    @Query("select m.id from Movimiento m where m.usuarioId = :usuarioId and m.id in :ids")
+    List<UUID> idsExistentes(@Param("usuarioId") UUID usuarioId, @Param("ids") Collection<UUID> ids);
 
     @Modifying
     @Query("delete from Movimiento m where m.usuarioId = :usuarioId")

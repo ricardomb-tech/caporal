@@ -1,5 +1,6 @@
 package co.caporal.api.auth;
 
+import co.caporal.api.auditoria.RegistroSeguridad;
 import co.caporal.api.auth.AuthDtos.LoginRequest;
 import co.caporal.api.auth.AuthDtos.RegistroRequest;
 import co.caporal.api.auth.AuthDtos.TokenResponse;
@@ -22,16 +23,18 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
     private final UsuarioRepository usuarios;
     private final PasswordEncoder encoder;
-    private final JwtService jwt;
+    private final Sesiones sesiones;
+    private final RegistroSeguridad registro;
     private final int intentosMaximos;
     private final Duration bloqueo;
 
-    public AuthController(UsuarioRepository usuarios, PasswordEncoder encoder, JwtService jwt,
+    public AuthController(UsuarioRepository usuarios, PasswordEncoder encoder, Sesiones sesiones, RegistroSeguridad registro,
                           @Value("${caporal.seguridad.intentos-maximos}") int intentosMaximos,
                           @Value("${caporal.seguridad.minutos-bloqueo}") long minutosBloqueo) {
         this.usuarios = usuarios;
         this.encoder = encoder;
-        this.jwt = jwt;
+        this.sesiones = sesiones;
+        this.registro = registro;
         this.intentosMaximos = intentosMaximos;
         this.bloqueo = Duration.ofMinutes(minutosBloqueo);
     }
@@ -45,7 +48,8 @@ public class AuthController {
         }
         Usuario u = usuarios.save(new Usuario(req.celular(), req.nombreNegocio().trim(),
                 req.municipio().trim(), encoder.encode(req.clave()), Instant.now()));
-        return new TokenResponse(jwt.emitir(u.getId()), jwt.segundosVigencia(), u.getNombreNegocio());
+        registro.registroNuevo(u.getId());
+        return sesiones.emitir(u);
     }
 
     // noRollbackFor: el conteo de intentos fallidos debe guardarse aunque se responda 401.
@@ -54,18 +58,32 @@ public class AuthController {
     public TokenResponse ingresar(@Valid @RequestBody LoginRequest req) {
         Instant ahora = Instant.now();
         // Mismo mensaje para celular inexistente y clave errada: no revela qué celulares existen.
-        Usuario u = usuarios.findByCelular(req.celular())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Celular o clave incorrectos"));
+        Usuario u = usuarios.findByCelular(req.celular()).orElse(null);
+        if (u == null) {
+            registro.ingresoFallido(null);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Celular o clave incorrectos");
+        }
         if (u.estaBloqueado(ahora)) {
+            registro.cuentaBloqueada(u.getId());
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "Demasiados intentos. Espere unos minutos e intente de nuevo");
         }
         if (!encoder.matches(req.clave(), u.getPasswordHash())) {
             u.registrarFallo(intentosMaximos, ahora.plus(bloqueo));
             usuarios.saveAndFlush(u);
+            registro.ingresoFallido(u.getId());
+            if (u.estaBloqueado(ahora)) {
+                registro.cuentaBloqueada(u.getId());
+            }
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Celular o clave incorrectos");
         }
-        u.registrarIngreso();
-        return new TokenResponse(jwt.emitir(u.getId()), jwt.segundosVigencia(), u.getNombreNegocio());
+        if (encoder.upgradeEncoding(u.getPasswordHash())) {
+            // Clave guardada con bcrypt: se vuelve a cifrar con Argon2id ahora que se conoce (sin pedir nada al usuario).
+            u.cambiarClave(encoder.encode(req.clave()));
+        } else {
+            u.registrarIngreso();
+        }
+        registro.ingresoCorrecto(u.getId());
+        return sesiones.emitir(u);
     }
 }

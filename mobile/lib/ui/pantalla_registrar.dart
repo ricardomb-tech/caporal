@@ -6,6 +6,7 @@ import '../data/producto.dart';
 import '../data/repositorio.dart';
 import '../formato.dart';
 import 'panel_pedido.dart';
+import 'lista_venta.dart';
 import 'pantalla_exito.dart';
 import 'selector_productos.dart';
 import 'tema.dart';
@@ -97,6 +98,17 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
     });
   }
 
+  /// Quita una unidad del producto y descuenta su precio del total.
+  void _restarProducto(Producto p) {
+    setState(() {
+      final i = _carrito.lastIndexWhere((x) => x.id == p.id);
+      if (i < 0) return;
+      _carrito.removeAt(i);
+      final nuevo = _valor - p.precio;
+      _digitos = (_carrito.isEmpty || nuevo <= 0) ? '' : nuevo.toString();
+    });
+  }
+
   String? get _descripcion {
     if (_esGasto) {
       final partes = [
@@ -185,6 +197,18 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                   if (_esVenta)
                     SelectorProductos(
                         enVenta: _carrito, alElegir: _sumarProducto),
+                  if (_esVenta && _carrito.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                          'Toque cada producto que lleva: cada toque suma uno. Si no está, use "+ Nuevo".',
+                          style: TextStyle(fontSize: 13, color: Colores.gris)),
+                    ),
+                  if (_esVenta && _carrito.isNotEmpty)
+                    ListaVenta(
+                        lineas: _lineas,
+                        alSumar: _sumarProducto,
+                        alRestar: _restarProducto),
                   if (_esGasto)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -223,12 +247,6 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
             Tarjeta(
               relleno: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               hijo: Column(children: [
-                if (_descripcion != null && !_esGasto)
-                  Text(_descripcion!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(fontSize: 14, color: Colores.gris)),
                 Text(pesos(_valor),
                     style: TextStyle(
                         fontSize: 40,

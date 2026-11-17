@@ -20,6 +20,10 @@ public final class AuthDtos {
     public record LoginRequest(@NotBlank String celular, @NotBlank String clave) {
     }
 
-    public record TokenResponse(String token, long expiraEnSegundos, String nombreNegocio) {
+    /** token: acceso corto (cabecera Authorization). tokenRenovacion: un solo uso, para pedir un par nuevo. */
+    public record TokenResponse(String token, long expiraEnSegundos, String nombreNegocio, String tokenRenovacion) {
+    }
+
+    public record RenovarRequest(@NotBlank @Size(max = 100) String tokenRenovacion) {
     }
 }

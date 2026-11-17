@@ -24,8 +24,12 @@ management:
 caporal:
   jwt:
     secret: ${CAPORAL_JWT_SECRET:}
-    minutos-vigencia: 60
+    minutos-vigencia: 15
+  sesion:
+    dias-renovacion: 60
   seguridad:
     intentos-maximos: 5
     minutos-bloqueo: 15
     solicitudes-por-minuto: 120
+    ingresos-por-minuto: 20
+    registros-por-hora: 30
