@@ -157,23 +157,33 @@ class Inventario extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Descuenta lo vendido. Se llama dentro de la transacción que guarda la venta.
-  Future<void> descontarVenta(DatabaseExecutor tx, Movimiento venta, List<LineaVenta> lineas) async {
+  /// Aplica al inventario las líneas de un movimiento de dinero, dentro de su misma transacción:
+  /// una venta (de contado o fiada) descuenta; un gasto de pedido suma lo que llegó.
+  Future<void> aplicarLineas(DatabaseExecutor tx, Movimiento m, List<LineaVenta> lineas) async {
     for (final l in lineas) {
-      if (!l.producto.controlaStock || l.cantidad <= 0) continue;
-      await _evento(tx,
-          productoId: l.producto.id,
-          delta: -l.cantidad,
-          motivo: MotivoInventario.venta,
-          movimientoId: venta.id,
-          precioUnitario: l.producto.precio);
+      if (l.cantidad <= 0) continue;
+      if (m.tipo == TipoMovimiento.gasto) {
+        // Si llegó mercancía de un producto que no llevaba cuenta, empieza a llevarla.
+        await _asegurarControl(tx, l.producto.id);
+        await _evento(tx,
+            productoId: l.producto.id, delta: l.cantidad, motivo: MotivoInventario.compra, movimientoId: m.id);
+      } else if (m.tipo == TipoMovimiento.venta || m.tipo == TipoMovimiento.fiado) {
+        if (!l.producto.controlaStock) continue;
+        await _evento(tx,
+            productoId: l.producto.id,
+            delta: -l.cantidad,
+            motivo: MotivoInventario.venta,
+            movimientoId: m.id,
+            precioUnitario: l.producto.precio);
+      }
     }
   }
 
-  /// Corregir una venta devuelve sus unidades al inventario (dentro de la transacción del reverso).
-  Future<void> devolverVenta(DatabaseExecutor tx, String ventaId, String reversoId) async {
+  /// Corregir una venta devuelve sus unidades; corregir un pedido las vuelve a sacar.
+  /// Se llama dentro de la transacción del reverso.
+  Future<void> revertirLineas(DatabaseExecutor tx, String originalId, String reversoId) async {
     final filas = await tx.query('mov_inventario',
-        where: "movimiento_id = ? AND motivo = 'venta'", whereArgs: [ventaId]);
+        where: "movimiento_id = ? AND motivo IN ('venta', 'compra')", whereArgs: [originalId]);
     for (final f in filas.map(MovInventario.deFila)) {
       await _evento(tx,
           productoId: f.productoId,

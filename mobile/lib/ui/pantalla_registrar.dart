@@ -5,6 +5,7 @@ import '../data/movimiento.dart';
 import '../data/producto.dart';
 import '../data/repositorio.dart';
 import '../formato.dart';
+import 'panel_pedido.dart';
 import 'pantalla_exito.dart';
 import 'selector_productos.dart';
 import 'tema.dart';
@@ -21,12 +22,24 @@ class PantallaRegistrar extends StatefulWidget {
 }
 
 class _PantallaRegistrarState extends State<PantallaRegistrar> {
-  static const _categorias = ['Mercado', 'Arriendo', 'Servicios', 'Transporte', 'Otro'];
+  static const _pedido = 'Pedido';
+  static const _categorias = [
+    _pedido,
+    'Mercado',
+    'Arriendo',
+    'Servicios',
+    'Transporte',
+    'Otro'
+  ];
 
   String _digitos = '';
-  late final TextEditingController _cliente = TextEditingController(text: widget.clienteInicial ?? '');
+  late final TextEditingController _cliente =
+      TextEditingController(text: widget.clienteInicial ?? '');
   final _nota = TextEditingController();
   final List<Producto> _carrito = [];
+
+  /// Lo que llegó en un pedido (gasto de mercancía), por producto.
+  final Map<String, LineaVenta> _llegada = {};
   String _categoria = _categorias.first;
   String _medio = 'EFECTIVO';
   bool _guardando = false;
@@ -39,9 +52,12 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   TipoMovimiento get _tipo => _fiado ? TipoMovimiento.fiado : widget.tipo;
   bool get _esFiado => _tipo == TipoMovimiento.fiado;
   bool get _esGasto => _tipo == TipoMovimiento.gasto;
+  bool get _esPedido => _esGasto && _categoria == _pedido;
 
   /// Venta de contado o fiada: se eligen productos y se descuentan del inventario.
-  bool get _esVenta => widget.tipo == TipoMovimiento.venta || widget.tipo == TipoMovimiento.fiado;
+  bool get _esVenta =>
+      widget.tipo == TipoMovimiento.venta ||
+      widget.tipo == TipoMovimiento.fiado;
 
   String get _titulo => switch (_tipo) {
         TipoMovimiento.venta => 'Vendí',
@@ -52,17 +68,21 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
 
   String get _subtitulo => switch (_tipo) {
         TipoMovimiento.venta => 'Toque un producto o escriba el valor',
-        TipoMovimiento.gasto => 'Anote lo que pagó hoy',
+        TipoMovimiento.gasto =>
+          'Anote lo que pagó; si llegó mercancía, elija Pedido',
         TipoMovimiento.fiado => 'Lo que se lleva y quién lo paga después',
         TipoMovimiento.abono => 'Anote lo que le pagaron',
       };
 
-  Color get _colorMonto => _esGasto ? Colores.rojo : (_esFiado ? Colores.ambarTexto : Colores.verde);
+  Color get _colorMonto =>
+      _esGasto ? Colores.rojo : (_esFiado ? Colores.ambarTexto : Colores.verde);
 
   void _tecla(String t) {
     setState(() {
       if (t == 'Borrar') {
-        if (_digitos.isNotEmpty) _digitos = _digitos.substring(0, _digitos.length - 1);
+        if (_digitos.isNotEmpty) {
+          _digitos = _digitos.substring(0, _digitos.length - 1);
+        }
         if (_digitos.isEmpty) _carrito.clear();
       } else if (_digitos.length + t.length <= 9) {
         _digitos = (_digitos + t).replaceFirst(RegExp(r'^0+'), '');
@@ -79,11 +99,22 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
 
   String? get _descripcion {
     if (_esGasto) {
-      final n = _nota.text.trim();
-      return n.isEmpty ? _categoria : '$_categoria · $n';
+      final partes = [
+        _categoria,
+        if (_esPedido && _llegada.isNotEmpty)
+          _llegada.values
+              .map((l) => '${l.cantidad} ${l.producto.nombre}')
+              .join(', '),
+        if (_nota.text.trim().isNotEmpty) _nota.text.trim(),
+      ];
+      return partes.join(' · ');
     }
     if (_carrito.isEmpty) return null;
-    return _lineas.map((l) => l.cantidad > 1 ? '${l.cantidad} ${l.producto.nombre}' : l.producto.nombre).join(', ');
+    return _lineas
+        .map((l) => l.cantidad > 1
+            ? '${l.cantidad} ${l.producto.nombre}'
+            : l.producto.nombre)
+        .join(', ');
   }
 
   /// Lo vendido, agrupado por producto, en el orden en que se fue agregando.
@@ -94,7 +125,9 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
       cuenta[p.id] = (cuenta[p.id] ?? 0) + 1;
       productos[p.id] = p;
     }
-    return [for (final e in cuenta.entries) LineaVenta(productos[e.key]!, e.value)];
+    return [
+      for (final e in cuenta.entries) LineaVenta(productos[e.key]!, e.value)
+    ];
   }
 
   Future<void> _guardar() async {
@@ -103,18 +136,27 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
           tipo: _tipo,
           valor: _valor,
           descripcion: _descripcion,
-          clienteNombre: (_esFiado || widget.tipo == TipoMovimiento.abono) ? _cliente.text.trim() : null,
+          clienteNombre: (_esFiado || widget.tipo == TipoMovimiento.abono)
+              ? _cliente.text.trim()
+              : null,
           medioPago: _esFiado ? null : ((_esVenta || _esGasto) ? _medio : null),
-          lineas: _esVenta ? _lineas : const [],
+          lineas: _esVenta
+              ? _lineas
+              : (_esPedido ? _llegada.values.toList() : const []),
         );
     if (!mounted) return;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PantallaExito(movimiento: m)));
+    Navigator.pushReplacement(context,
+        MaterialPageRoute(builder: (_) => PantallaExito(movimiento: m)));
   }
 
   @override
   Widget build(BuildContext context) {
-    final puedeGuardar = _valor > 0 && !_guardando && (!_esFiado || _cliente.text.trim().isNotEmpty);
+    final puedeGuardar = _valor > 0 &&
+        !_guardando &&
+        (!_esFiado || _cliente.text.trim().isNotEmpty);
     return Scaffold(
+      // El teclado del sistema pasa por encima del teclado numérico (que no se usa mientras se escribe un nombre).
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -123,38 +165,78 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               const BotonAtras(),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(_titulo, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  Text(_subtitulo, style: const TextStyle(fontSize: 14, color: Colores.gris)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_titulo,
+                          style: const TextStyle(
+                              fontSize: 26, fontWeight: FontWeight.bold)),
+                      Text(_subtitulo,
+                          style: const TextStyle(
+                              fontSize: 14, color: Colores.gris)),
+                    ]),
               ),
             ]),
-            const SizedBox(height: 12),
-            if (_esVenta) SelectorProductos(enVenta: _carrito, alElegir: _sumarProducto),
-            if (_esGasto)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Wrap(spacing: 8, runSpacing: 8, children: [
-                  for (final c in _categorias) ChipCaporal(c, seleccionado: c == _categoria, alTocar: () => setState(() => _categoria = c)),
+            // Lo de arriba se desplaza si no cabe; el teclado numérico siempre conserva su tamaño.
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(children: [
+                  const SizedBox(height: 12),
+                  if (_esVenta)
+                    SelectorProductos(
+                        enVenta: _carrito, alElegir: _sumarProducto),
+                  if (_esGasto)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Wrap(spacing: 8, runSpacing: 8, children: [
+                        for (final c in _categorias)
+                          ChipCaporal(c,
+                              seleccionado: c == _categoria,
+                              alTocar: () => setState(() => _categoria = c)),
+                      ]),
+                    ),
+                  if (_esPedido) ...[
+                    const SizedBox(height: 8),
+                    PanelPedido(
+                      lineas: _llegada.values.toList(),
+                      proveedor: _nota,
+                      alCambiar: (l) =>
+                          setState(() => _llegada[l.producto.id] = l),
+                      alQuitar: (p) => setState(() => _llegada.remove(p.id)),
+                    ),
+                  ],
+                  if (_esFiado || widget.tipo == TipoMovimiento.abono)
+                    TextField(
+                      controller: _cliente,
+                      onChanged: (_) => setState(() {}),
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                          labelText: _esFiado
+                              ? '¿A quién le fió?'
+                              : '¿Quién le pagó?'),
+                    ),
                 ]),
               ),
-            if (_esFiado || widget.tipo == TipoMovimiento.abono)
-              TextField(
-                controller: _cliente,
-                onChanged: (_) => setState(() {}),
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(labelText: _esFiado ? '¿A quién le fió?' : '¿Quién le pagó?'),
-              ),
+            ),
+            // El valor y la forma de pago quedan siempre a la vista, junto al teclado.
             const SizedBox(height: 10),
             Tarjeta(
-              relleno: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              relleno: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               hijo: Column(children: [
                 if (_descripcion != null && !_esGasto)
-                  Text(_descripcion!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, color: Colores.gris)),
-                Text(pesos(_valor), style: TextStyle(fontSize: 46, fontWeight: FontWeight.bold, color: _colorMonto)),
+                  Text(_descripcion!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(fontSize: 14, color: Colores.gris)),
+                Text(pesos(_valor),
+                    style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: _colorMonto)),
               ]),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             if (_esVenta || _esGasto)
               Align(
                 alignment: Alignment.centerLeft,
@@ -172,10 +254,14 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                             _fiado = false;
                           })),
                   if (_esVenta)
-                    ChipCaporal('Fiado', seleccionado: _esFiado, alTocar: () => setState(() => _fiado = true)),
+                    ChipCaporal('Fiado',
+                        seleccionado: _esFiado,
+                        alTocar: () => setState(() => _fiado = true)),
                 ]),
               ),
-            Expanded(
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 232,
               child: Column(children: [
                 for (final fila in const [
                   ['1', '2', '3'],
@@ -200,7 +286,9 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                                       style: TextStyle(
                                           fontSize: t == 'Borrar' ? 16 : 26,
                                           fontWeight: FontWeight.w600,
-                                          color: t == 'Borrar' ? Colores.rojo : Colores.texto)),
+                                          color: t == 'Borrar'
+                                              ? Colores.rojo
+                                              : Colores.texto)),
                                 ),
                               ),
                             ),
@@ -211,8 +299,12 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               ]),
             ),
             const SizedBox(height: 8),
-            BotonCaporal(_esGasto ? 'Guardar gasto' : (_esFiado ? 'Anotar deuda' : 'Guardar'),
-                icono: Icons.check, alTocar: puedeGuardar ? _guardar : null),
+            BotonCaporal(
+                _esGasto
+                    ? 'Guardar gasto'
+                    : (_esFiado ? 'Anotar deuda' : 'Guardar'),
+                icono: Icons.check,
+                alTocar: puedeGuardar ? _guardar : null),
           ]),
         ),
       ),

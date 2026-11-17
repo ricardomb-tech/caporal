@@ -6,12 +6,16 @@ import '../data/producto.dart';
 import 'tema.dart';
 
 /// Crear o editar un producto. Devuelve el producto guardado, o null si se canceló o se quitó.
-Future<Producto?> mostrarDialogoProducto(BuildContext context, {Producto? producto}) =>
-    showDialog<Producto>(context: context, builder: (_) => _DialogoProducto(producto: producto));
+/// [conCantidadInicial] en false cuando la cantidad la pone otra anotación (por ejemplo, un pedido que llegó).
+Future<Producto?> mostrarDialogoProducto(BuildContext context, {Producto? producto, bool conCantidadInicial = true}) =>
+    showDialog<Producto>(
+        context: context,
+        builder: (_) => _DialogoProducto(producto: producto, conCantidadInicial: conCantidadInicial));
 
 class _DialogoProducto extends StatefulWidget {
   final Producto? producto;
-  const _DialogoProducto({this.producto});
+  final bool conCantidadInicial;
+  const _DialogoProducto({this.producto, this.conCantidadInicial = true});
 
   @override
   State<_DialogoProducto> createState() => _DialogoProductoState();
@@ -96,7 +100,7 @@ class _DialogoProductoState extends State<_DialogoProducto> {
             value: _llevaCuenta,
             onChanged: (v) => setState(() => _llevaCuenta = v),
           ),
-          if (_nuevo && _llevaCuenta)
+          if (_nuevo && _llevaCuenta && widget.conCantidadInicial)
             TextField(
                 controller: _cantidad,
                 keyboardType: TextInputType.number,

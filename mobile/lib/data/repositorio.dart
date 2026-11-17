@@ -38,7 +38,7 @@ class Repositorio extends ChangeNotifier {
   final Inventario inventario;
   Repositorio(this.db, this.dispositivoId, this.cola, this.inventario);
 
-  /// Guarda el movimiento, descuenta del inventario lo vendido y lo encola, todo en la MISMA transacción:
+  /// Guarda el movimiento, aplica al inventario lo vendido o lo que llegó en un pedido, y lo encola, todo en la MISMA transacción:
   /// o queda todo o no queda nada, así no se pierde ni se duplica nada.
   Future<Movimiento> registrar({
     required TipoMovimiento tipo,
@@ -52,7 +52,7 @@ class Repositorio extends ChangeNotifier {
     final m = _nuevo(tipo, valor, descripcion, clienteNombre, medioPago, reversoDe);
     await db.transaction((tx) async {
       await _guardar(tx, m);
-      await inventario.descontarVenta(tx, m, lineas);
+      await inventario.aplicarLineas(tx, m, lineas);
     });
     inventario.avisarCambio();
     notifyListeners();
@@ -164,13 +164,13 @@ class Repositorio extends ChangeNotifier {
   }
 
   /// Corregir no borra: anota un reverso que apunta al movimiento original
-  /// y, si era una venta de productos, devuelve sus unidades al inventario.
+  /// y deshace su efecto en el inventario (una venta devuelve unidades; un pedido las saca).
   Future<Movimiento> corregir(Movimiento original) async {
     final m = _nuevo(original.tipo, original.valor, original.descripcion, original.clienteNombre, original.medioPago,
         original.id);
     await db.transaction((tx) async {
       await _guardar(tx, m);
-      await inventario.devolverVenta(tx, original.id, m.id);
+      await inventario.revertirLineas(tx, original.id, m.id);
     });
     inventario.avisarCambio();
     notifyListeners();

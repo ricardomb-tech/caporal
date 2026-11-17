@@ -12,10 +12,13 @@ class SelectorProductos extends StatelessWidget {
   /// Lo que ya se agregó a esta venta (un producto aparece tantas veces como unidades).
   final List<Producto> enVenta;
   final ValueChanged<Producto> alElegir;
-  const SelectorProductos({super.key, required this.enVenta, required this.alElegir});
+
+  /// En un pedido se muestra cuánto tiene (para saber qué pedir) y no se descuenta lo elegido.
+  final bool modoPedido;
+  const SelectorProductos({super.key, required this.enVenta, required this.alElegir, this.modoPedido = false});
 
   Future<void> _nuevo(BuildContext context) async {
-    final p = await mostrarDialogoProducto(context);
+    final p = await mostrarDialogoProducto(context, conCantidadInicial: !modoPedido);
     if (p != null) alElegir(p);
   }
 
@@ -35,8 +38,8 @@ class SelectorProductos extends StatelessWidget {
             itemBuilder: (_, i) {
               if (i == lista.length) return _ChipNuevo(alTocar: () => _nuevo(context));
               final p = lista[i];
-              final quedan = p.stock - enVenta.where((x) => x.id == p.id).length;
-              return _ChipProducto(producto: p, quedan: quedan, alTocar: () => alElegir(p));
+              final quedan = modoPedido ? p.stock : p.stock - enVenta.where((x) => x.id == p.id).length;
+              return _ChipProducto(producto: p, quedan: quedan, prefijo: modoPedido ? 'Tiene' : 'Quedan', alTocar: () => alElegir(p));
             },
           );
         },
@@ -48,8 +51,9 @@ class SelectorProductos extends StatelessWidget {
 class _ChipProducto extends StatelessWidget {
   final Producto producto;
   final int quedan;
+  final String prefijo;
   final VoidCallback alTocar;
-  const _ChipProducto({required this.producto, required this.quedan, required this.alTocar});
+  const _ChipProducto({required this.producto, required this.quedan, required this.prefijo, required this.alTocar});
 
   @override
   Widget build(BuildContext context) {
@@ -62,10 +66,10 @@ class _ChipProducto extends StatelessWidget {
       aviso = 'Agotado';
       colorAviso = Colores.rojo;
     } else if (quedan <= Producto.umbralPocas) {
-      aviso = 'Quedan $quedan';
+      aviso = '$prefijo $quedan';
       colorAviso = Colores.ambarTexto;
     } else {
-      aviso = 'Quedan $quedan';
+      aviso = '$prefijo $quedan';
       colorAviso = Colores.gris;
     }
     return InkWell(
