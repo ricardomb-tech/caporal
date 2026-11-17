@@ -1,0 +1,6 @@
+# Bloque para el Caddy del VPS: HTTPS automático para la API de Caporal.
+# Cambie el nombre por el dominio definitivo cuando exista (registro A hacia la IP del VPS).
+caporal.2.25.187.25.sslip.io {
+	encode gzip
+	reverse_proxy caporal-api:8080
+}

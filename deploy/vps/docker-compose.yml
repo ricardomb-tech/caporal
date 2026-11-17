@@ -1,0 +1,53 @@
+# Caporal en el VPS: base de datos y API en su propio proyecto Docker.
+# No publica puertos: el Caddy que ya atiende 80/443 en el VPS entra por la red "proxy".
+name: caporal
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - caporal_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [interna]
+
+  api:
+    build: ../../backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      CAPORAL_JWT_SECRET: ${JWT_SECRET}
+      # El VPS es pequeño y lo comparte con otro proyecto: memoria acotada.
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      interna: {}
+      proxy:
+        aliases: [caporal-api]
+
+networks:
+  interna: {}
+  proxy:
+    external: true
+    name: ${RED_PROXY:-domiz-pruebas_default}
+
+volumes:
+  caporal_db:

@@ -18,7 +18,7 @@ Esqueleto técnico en construcción. Lo que hay hoy:
 
 Pendiente (hoja de ruta):
 
-- Recuperar clave por SMS: implementado con Twilio Verify; requiere `TWILIO_*` en `.env` (ver `.env.example`).
+- Recuperar clave por SMS: pendiente (por ahora se atiende por soporte desde Ayuda).
 - Productos e inventario ya se envían al servidor; falta traerlos de vuelta (pull) al reinstalar o en un segundo teléfono. Perfil y negocio siguen solo en el teléfono.
 - Huella dactilar para entrar (hoy solo PIN de 4 números como candado de comodidad).
 - Tablero de la Gobernación y publicación en tiendas.
