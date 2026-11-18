@@ -4,9 +4,9 @@ Caporal se prueba en tres niveles:
 
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
-| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 44 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 65 |
-| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 13 |
+| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 47 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 68 |
+| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 14 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
 
@@ -35,6 +35,21 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `salirRevocaElTokenDeRenovacion` | `SesionesYClavesTest` | Cerrar sesión revoca |
 | `unTokenInventadoNoRenueva` | `SesionesYClavesTest` | 401 con mensaje |
 | `laApiEnviaCabecerasDeSeguridad` | `SesionesYClavesTest` | CSP, Referrer-Policy, nosniff |
+
+### CU-03: PIN y huella
+
+| Prueba | Archivo | Verifica |
+|---|---|---|
+| `sin PIN no se puede activar la huella, y quitar el PIN la apaga` | `huella_test.dart` | La huella siempre tiene el PIN de respaldo |
+| `con huella activada, abre la app sin escribir el PIN` | `huella_test.dart` | Desbloqueo con huella |
+| `si la huella no coincide, queda el PIN y el botón para reintentar` | `huella_test.dart` | Respaldo con PIN |
+
+### Política de privacidad
+
+| Prueba | Archivo | Verifica |
+|---|---|---|
+| `laPoliticaSeVeSinSesion` / `laDireccionCortaTambienFunciona` | `PaginaPrivacidadTest` | Página pública, sin recursos externos |
+| `elRestoSigueProtegido` | `PaginaPrivacidadTest` | Abrir la página no abre lo demás |
 
 ### CU-04, CU-05, CU-06: venta, gasto o pedido, fiado
 
@@ -169,6 +184,7 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-09 | Comprobante repetido (CU-10) | Registrar otro pago con el mismo número | Aviso con fecha, cliente y valor; no guarda |
 | PM-10 | Corregir (CU-11) | Abrir una venta → Corregir | Aparece el reverso; el inventario vuelve; el original sigue en el historial |
 | PM-11 | Lector de pantalla | Activar VoiceOver (iOS) o TalkBack (Android) y recorrer inicio, Vendí y Le deben | Cada zona tocable se anuncia como botón con nombre; los chips dicen si están elegidos |
+| PM-14 | Huella (CU-03) | Crear PIN → activar Huella o Face ID → cerrar y abrir la app | Pide la huella o la cara y abre sin PIN; si se cancela, deja escribir el PIN |
 | PM-13 | Dos celulares (CU-08) | Entrar con la misma cuenta en dos celulares; vender en uno | En menos de dos minutos, la venta aparece en el otro |
 | PM-12 | Borrar datos (CU-15) | Privacidad → Eliminar mis datos → escribir ELIMINAR | Cierra la sesión; al entrar de nuevo con ese celular: "Celular o clave incorrectos" |
 

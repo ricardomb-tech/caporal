@@ -19,6 +19,7 @@ class Sesion extends ChangeNotifier {
   static const _clavePerfil = 'caporal_perfil';
   static const _clavePin = 'caporal_pin';
   static const _claveBienvenida = 'caporal_bienvenida';
+  static const _claveHuella = 'caporal_huella';
   static const _claveRestaurado = 'caporal_restaurado';
   static const _clavePerfilEn = 'caporal_perfil_en';
   static const _claveCambiosHasta = 'caporal_cambios_hasta';
@@ -51,6 +52,9 @@ class Sesion extends ChangeNotifier {
   DateTime? perfilEn;
   bool perfilPendiente = false;
   bool _tienePin = false;
+
+  /// Abrir con huella o Face ID (solo si hay PIN, que queda de respaldo).
+  bool usaHuella = false;
   bool desbloqueada = false;
 
   bool get activa => nombreNegocio != null;
@@ -70,6 +74,7 @@ class Sesion extends ChangeNotifier {
     perfilEn = en == null ? null : DateTime.tryParse(en);
     perfilPendiente = await _almacen.read(key: _clavePerfilPendiente) == '1';
     _tienePin = await _almacen.read(key: _clavePin) != null;
+    usaHuella = _tienePin && await _almacen.read(key: _claveHuella) == '1';
     final perfil = await _almacen.read(key: _clavePerfil);
     if (perfil != null) {
       final p = jsonDecode(perfil) as Map<String, dynamic>;
@@ -286,7 +291,24 @@ class Sesion extends ChangeNotifier {
     return ok;
   }
 
+  Future<void> cambiarHuella(bool activar) async {
+    usaHuella = activar && _tienePin;
+    if (usaHuella) {
+      await _almacen.write(key: _claveHuella, value: '1');
+    } else {
+      await _almacen.delete(key: _claveHuella);
+    }
+    notifyListeners();
+  }
+
+  /// El sistema confirmó la huella o la cara del dueño.
+  void desbloquearConHuella() {
+    desbloqueada = true;
+    notifyListeners();
+  }
+
   Future<void> quitarPin() async {
+    await cambiarHuella(false);
     await _almacen.delete(key: _clavePin);
     _tienePin = false;
     notifyListeners();

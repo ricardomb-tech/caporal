@@ -15,6 +15,7 @@ La guía paso a paso está en [`deploy/vps/README.md`](../deploy/vps/README.md).
 | Respaldos | Diarios a las 3:15 UTC, cifrados con `age`; la llave privada está fuera del servidor; 14 días |
 | Restauración | `deploy/vps/probar-restauracion.sh` la prueba en una base temporal; mensual |
 | Vigilancia | `deploy/vps/vigilar.sh` cada 5 minutos: salud, HTTPS y disco; reinicia la API si no responde |
+| Política de privacidad | Pública en `https://<servidor>/privacidad`; es la dirección que se pone en App Store Connect y Google Play |
 | Eventos de seguridad | `docker compose logs api | grep 'evento='` |
 
 En local basta `docker compose up --build` en la raíz (ver el [README principal](../README.md)).

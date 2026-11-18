@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // API sin cookies ni sesión: se autentica con token en cabecera
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
-                        .requestMatchers("/api/v1/auth/**", "/actuator/health", "/error",
+                        .requestMatchers("/api/v1/auth/**", "/actuator/health", "/error", "/privacidad", "/privacidad.html",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
@@ -64,7 +64,12 @@ public class SecurityConfig {
                         .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
                         .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
                                 PathPatternRequestMatcher.withDefaults().matcher("/api/**"),
-                                new StaticHeadersWriter("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"))));
+                                new StaticHeadersWriter("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")))
+                        // Página de privacidad: solo su propio estilo, sin scripts ni recursos externos.
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                                PathPatternRequestMatcher.withDefaults().matcher("/privacidad*"),
+                                new StaticHeadersWriter("Content-Security-Policy",
+                                        "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'"))));
         return http.build();
     }
 }

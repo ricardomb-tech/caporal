@@ -1,5 +1,6 @@
 package co.caporal.caporal
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FlutterFragmentActivity: la necesita la huella (local_auth).
+class MainActivity : FlutterFragmentActivity()

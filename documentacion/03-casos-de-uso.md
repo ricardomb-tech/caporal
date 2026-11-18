@@ -61,9 +61,10 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 ## CU-03 Proteger con PIN
 
 - **Actor:** dueño. **Flujo:** en Ajustes crea un PIN de 4 números; al abrir la app se pide el PIN.
+- **Alternativa:** con PIN creado y si el celular tiene huella o Face ID, puede activar "Huella o Face ID" (confirmándola una vez). Al abrir la app se pide la huella o la cara; si no coincide o la cancela, escribe el PIN. Quitar el PIN apaga la huella.
 - **Excepción:** 5 PIN errados seguidos → espera de 30 segundos.
 - **Regla:** es un candado de comodidad para que otra persona no vea las cuentas; los datos ya están cifrados en el teléfono.
-- **Código:** `ui/cuenta/pantalla_pin.dart`.
+- **Código:** `ui/cuenta/pantalla_pin.dart`, `datos/biometria.dart`, `ui/ajustes/pantalla_ajustes.dart`. La huella y la cara las verifica el sistema; Caporal no las ve ni las guarda.
 
 ## CU-04 Registrar venta
 

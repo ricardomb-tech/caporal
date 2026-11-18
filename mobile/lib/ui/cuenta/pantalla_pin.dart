@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../datos/biometria.dart';
 import '../../sincronizacion/sesion.dart';
 import '../comun/tema.dart';
 import '../comun/widgets.dart';
@@ -22,6 +23,25 @@ class _PantallaPinState extends State<PantallaPin> {
   String? _mensaje;
   int _fallos = 0;
   DateTime? _bloqueadoHasta;
+
+  @override
+  void initState() {
+    super.initState();
+    // Al abrir la app con huella activada, se pide de una vez; el PIN queda de respaldo.
+    if (widget.modo == ModoPin.entrar && context.read<Sesion>().usaHuella) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _conHuella());
+    }
+  }
+
+  Future<void> _conHuella() async {
+    final ok = await context.read<Biometria>().verificar('Abra Caporal con su huella o su cara');
+    if (!mounted) return;
+    if (ok) {
+      context.read<Sesion>().desbloquearConHuella();
+    } else {
+      setState(() => _mensaje = 'Escriba su PIN o intente de nuevo con la huella');
+    }
+  }
 
   Future<void> _tecla(String t) async {
     if (_bloqueadoHasta != null && DateTime.now().isBefore(_bloqueadoHasta!)) {
@@ -135,6 +155,12 @@ class _PantallaPinState extends State<PantallaPin> {
                     ),
                   ),
               ]),
+            if (!crear && context.read<Sesion>().usaHuella)
+              TextButton.icon(
+                onPressed: _conHuella,
+                icon: const Icon(Icons.fingerprint, size: 26),
+                label: const Text('Usar huella o Face ID', style: TextStyle(fontSize: 16)),
+              ),
             const SizedBox(height: 8),
           ]),
         ),

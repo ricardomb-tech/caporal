@@ -104,6 +104,10 @@ Lo que el negocio guardó o cambió en la ventana (`desde`, `hasta`]: `{"product
 
 Respaldo completo del negocio para restaurar un teléfono: `{"productos": [...], "movimientos": [...], "inventario": [...], "hayMas": true}`. Los productos van completos en la página 0; movimientos e inventario de a 500, en orden de llegada. Mientras `hayMas` sea `true`, se pide la página siguiente.
 
+## Política de privacidad
+
+`GET /privacidad` → página pública en HTML (la piden App Store y Google Play). Sin scripts ni recursos externos.
+
 ## Salud
 
-`GET /actuator/health` → `{"status": "UP"}`. Es lo único público además del registro y el ingreso.
+`GET /actuator/health` → `{"status": "UP"}`. Es lo único público además del registro, el ingreso y la política de privacidad.
