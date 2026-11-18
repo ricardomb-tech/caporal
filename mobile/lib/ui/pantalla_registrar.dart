@@ -24,18 +24,10 @@ class PantallaRegistrar extends StatefulWidget {
 
 class _PantallaRegistrarState extends State<PantallaRegistrar> {
   static const _pedido = 'Pedido';
-  static const _categorias = [
-    _pedido,
-    'Mercado',
-    'Arriendo',
-    'Servicios',
-    'Transporte',
-    'Otro'
-  ];
+  static const _categorias = [_pedido, 'Mercado', 'Arriendo', 'Servicios', 'Transporte', 'Otro'];
 
   String _digitos = '';
-  late final TextEditingController _cliente =
-      TextEditingController(text: widget.clienteInicial ?? '');
+  late final TextEditingController _cliente = TextEditingController(text: widget.clienteInicial ?? '');
   final _nota = TextEditingController();
   final List<Producto> _carrito = [];
 
@@ -56,9 +48,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   bool get _esPedido => _esGasto && _categoria == _pedido;
 
   /// Venta de contado o fiada: se eligen productos y se descuentan del inventario.
-  bool get _esVenta =>
-      widget.tipo == TipoMovimiento.venta ||
-      widget.tipo == TipoMovimiento.fiado;
+  bool get _esVenta => widget.tipo == TipoMovimiento.venta || widget.tipo == TipoMovimiento.fiado;
 
   String get _titulo => switch (_tipo) {
         TipoMovimiento.venta => 'Vendí',
@@ -69,14 +59,12 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
 
   String get _subtitulo => switch (_tipo) {
         TipoMovimiento.venta => 'Toque un producto o escriba el valor',
-        TipoMovimiento.gasto =>
-          'Anote lo que pagó; si llegó mercancía, elija Pedido',
+        TipoMovimiento.gasto => 'Anote lo que pagó; si llegó mercancía, elija Pedido',
         TipoMovimiento.fiado => 'Lo que se lleva y quién lo paga después',
         TipoMovimiento.abono => 'Anote lo que le pagaron',
       };
 
-  Color get _colorMonto =>
-      _esGasto ? Colores.rojo : (_esFiado ? Colores.ambarTexto : Colores.verde);
+  Color get _colorMonto => _esGasto ? Colores.rojo : (_esFiado ? Colores.ambarTexto : Colores.verde);
 
   void _tecla(String t) {
     setState(() {
@@ -114,19 +102,13 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
       final partes = [
         _categoria,
         if (_esPedido && _llegada.isNotEmpty)
-          _llegada.values
-              .map((l) => '${l.cantidad} ${l.producto.nombre}')
-              .join(', '),
+          _llegada.values.map((l) => '${l.cantidad} ${l.producto.nombre}').join(', '),
         if (_nota.text.trim().isNotEmpty) _nota.text.trim(),
       ];
       return partes.join(' · ');
     }
     if (_carrito.isEmpty) return null;
-    return _lineas
-        .map((l) => l.cantidad > 1
-            ? '${l.cantidad} ${l.producto.nombre}'
-            : l.producto.nombre)
-        .join(', ');
+    return _lineas.map((l) => l.cantidad > 1 ? '${l.cantidad} ${l.producto.nombre}' : l.producto.nombre).join(', ');
   }
 
   /// Lo vendido, agrupado por producto, en el orden en que se fue agregando.
@@ -137,9 +119,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
       cuenta[p.id] = (cuenta[p.id] ?? 0) + 1;
       productos[p.id] = p;
     }
-    return [
-      for (final e in cuenta.entries) LineaVenta(productos[e.key]!, e.value)
-    ];
+    return [for (final e in cuenta.entries) LineaVenta(productos[e.key]!, e.value)];
   }
 
   Future<void> _guardar() async {
@@ -148,24 +128,17 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
           tipo: _tipo,
           valor: _valor,
           descripcion: _descripcion,
-          clienteNombre: (_esFiado || widget.tipo == TipoMovimiento.abono)
-              ? _cliente.text.trim()
-              : null,
+          clienteNombre: (_esFiado || widget.tipo == TipoMovimiento.abono) ? _cliente.text.trim() : null,
           medioPago: _esFiado ? null : ((_esVenta || _esGasto) ? _medio : null),
-          lineas: _esVenta
-              ? _lineas
-              : (_esPedido ? _llegada.values.toList() : const []),
+          lineas: _esVenta ? _lineas : (_esPedido ? _llegada.values.toList() : const []),
         );
     if (!mounted) return;
-    Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (_) => PantallaExito(movimiento: m)));
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PantallaExito(movimiento: m)));
   }
 
   @override
   Widget build(BuildContext context) {
-    final puedeGuardar = _valor > 0 &&
-        !_guardando &&
-        (!_esFiado || _cliente.text.trim().isNotEmpty);
+    final puedeGuardar = _valor > 0 && !_guardando && (!_esFiado || _cliente.text.trim().isNotEmpty);
     return Scaffold(
       // El teclado del sistema pasa por encima del teclado numérico (que no se usa mientras se escribe un nombre).
       resizeToAvoidBottomInset: false,
@@ -177,16 +150,10 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               const BotonAtras(),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_titulo,
-                          style: const TextStyle(
-                              fontSize: 26, fontWeight: FontWeight.bold)),
-                      Text(_subtitulo,
-                          style: const TextStyle(
-                              fontSize: 14, color: Colores.gris)),
-                    ]),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(_titulo, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                  Text(_subtitulo, style: const TextStyle(fontSize: 14, color: Colores.gris)),
+                ]),
               ),
             ]),
             // Lo de arriba se desplaza si no cabe; el teclado numérico siempre conserva su tamaño.
@@ -194,29 +161,21 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               child: SingleChildScrollView(
                 child: Column(children: [
                   const SizedBox(height: 12),
-                  if (_esVenta)
-                    SelectorProductos(
-                        enVenta: _carrito, alElegir: _sumarProducto),
+                  if (_esVenta) SelectorProductos(enVenta: _carrito, alElegir: _sumarProducto),
                   if (_esVenta && _carrito.isEmpty)
                     const Padding(
                       padding: EdgeInsets.only(top: 6),
-                      child: Text(
-                          'Toque cada producto que lleva: cada toque suma uno. Si no está, use "+ Nuevo".',
+                      child: Text('Toque cada producto que lleva: cada toque suma uno. Si no está, use "+ Nuevo".',
                           style: TextStyle(fontSize: 13, color: Colores.gris)),
                     ),
                   if (_esVenta && _carrito.isNotEmpty)
-                    ListaVenta(
-                        lineas: _lineas,
-                        alSumar: _sumarProducto,
-                        alRestar: _restarProducto),
+                    ListaVenta(lineas: _lineas, alSumar: _sumarProducto, alRestar: _restarProducto),
                   if (_esGasto)
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Wrap(spacing: 8, runSpacing: 8, children: [
                         for (final c in _categorias)
-                          ChipCaporal(c,
-                              seleccionado: c == _categoria,
-                              alTocar: () => setState(() => _categoria = c)),
+                          ChipCaporal(c, seleccionado: c == _categoria, alTocar: () => setState(() => _categoria = c)),
                       ]),
                     ),
                   if (_esPedido) ...[
@@ -224,8 +183,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                     PanelPedido(
                       lineas: _llegada.values.toList(),
                       proveedor: _nota,
-                      alCambiar: (l) =>
-                          setState(() => _llegada[l.producto.id] = l),
+                      alCambiar: (l) => setState(() => _llegada[l.producto.id] = l),
                       alQuitar: (p) => setState(() => _llegada.remove(p.id)),
                     ),
                   ],
@@ -234,10 +192,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                       controller: _cliente,
                       onChanged: (_) => setState(() {}),
                       textCapitalization: TextCapitalization.words,
-                      decoration: InputDecoration(
-                          labelText: _esFiado
-                              ? '¿A quién le fió?'
-                              : '¿Quién le pagó?'),
+                      decoration: InputDecoration(labelText: _esFiado ? '¿A quién le fió?' : '¿Quién le pagó?'),
                     ),
                 ]),
               ),
@@ -247,11 +202,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
             Tarjeta(
               relleno: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               hijo: Column(children: [
-                Text(pesos(_valor),
-                    style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: _colorMonto)),
+                Text(pesos(_valor), style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: _colorMonto)),
               ]),
             ),
             const SizedBox(height: 8),
@@ -272,9 +223,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                             _fiado = false;
                           })),
                   if (_esVenta)
-                    ChipCaporal('Fiado',
-                        seleccionado: _esFiado,
-                        alTocar: () => setState(() => _fiado = true)),
+                    ChipCaporal('Fiado', seleccionado: _esFiado, alTocar: () => setState(() => _fiado = true)),
                 ]),
               ),
             const SizedBox(height: 6),
@@ -296,17 +245,18 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                             child: Material(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(16),
-                                onTap: () => _tecla(t),
-                                child: Center(
-                                  child: Text(t,
-                                      style: TextStyle(
-                                          fontSize: t == 'Borrar' ? 16 : 26,
-                                          fontWeight: FontWeight.w600,
-                                          color: t == 'Borrar'
-                                              ? Colores.rojo
-                                              : Colores.texto)),
+                              child: comoBoton(
+                                etiqueta: t == 'Borrar' ? 'Borrar el último número' : (t == '000' ? 'Tres ceros' : t),
+                                hijo: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () => _tecla(t),
+                                  child: Center(
+                                    child: Text(t,
+                                        style: TextStyle(
+                                            fontSize: t == 'Borrar' ? 16 : 26,
+                                            fontWeight: FontWeight.w600,
+                                            color: t == 'Borrar' ? Colores.rojo : Colores.texto)),
+                                  ),
                                 ),
                               ),
                             ),
@@ -317,12 +267,8 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               ]),
             ),
             const SizedBox(height: 8),
-            BotonCaporal(
-                _esGasto
-                    ? 'Guardar gasto'
-                    : (_esFiado ? 'Anotar deuda' : 'Guardar'),
-                icono: Icons.check,
-                alTocar: puedeGuardar ? _guardar : null),
+            BotonCaporal(_esGasto ? 'Guardar gasto' : (_esFiado ? 'Anotar deuda' : 'Guardar'),
+                icono: Icons.check, alTocar: puedeGuardar ? _guardar : null),
           ]),
         ),
       ),

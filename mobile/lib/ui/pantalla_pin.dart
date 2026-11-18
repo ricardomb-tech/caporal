@@ -89,7 +89,8 @@ class _PantallaPinState extends State<PantallaPin> {
                 style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(_mensaje ?? 'Protege sus cuentas si pierde el teléfono',
-                style: TextStyle(fontSize: 14, color: _mensaje != null && _mensaje!.startsWith('P') ? Colores.rojo : Colores.gris)),
+                style: TextStyle(
+                    fontSize: 14, color: _mensaje != null && _mensaje!.startsWith('P') ? Colores.rojo : Colores.gris)),
             const SizedBox(height: 18),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               for (var i = 0; i < 4; i++)
@@ -97,7 +98,8 @@ class _PantallaPinState extends State<PantallaPin> {
                   margin: const EdgeInsets.all(8),
                   width: 16,
                   height: 16,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: i < _pin.length ? Colores.verde : const Color(0xFFD5D9D3)),
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle, color: i < _pin.length ? Colores.verde : const Color(0xFFD5D9D3)),
                 ),
             ]),
             const Spacer(),
@@ -119,10 +121,15 @@ class _PantallaPinState extends State<PantallaPin> {
                           : Material(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(18),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(18),
-                                onTap: () => _tecla(t),
-                                child: Center(child: Text(t, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600))),
+                              child: comoBoton(
+                                etiqueta: t == '⌫' ? 'Borrar el último número' : t,
+                                hijo: InkWell(
+                                  borderRadius: BorderRadius.circular(18),
+                                  onTap: () => _tecla(t),
+                                  child: Center(
+                                      child:
+                                          Text(t, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600))),
+                                ),
                               ),
                             ),
                     ),

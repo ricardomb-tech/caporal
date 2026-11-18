@@ -6,6 +6,7 @@ import '../data/producto.dart';
 import '../formato.dart';
 import 'dialogo_producto.dart';
 import 'tema.dart';
+import 'widgets.dart';
 
 /// Fila de productos para vender con un toque, con lo que queda de cada uno y un "+ Nuevo".
 class SelectorProductos extends StatelessWidget {
@@ -39,7 +40,8 @@ class SelectorProductos extends StatelessWidget {
               if (i == lista.length) return _ChipNuevo(alTocar: () => _nuevo(context));
               final p = lista[i];
               final quedan = modoPedido ? p.stock : p.stock - enVenta.where((x) => x.id == p.id).length;
-              return _ChipProducto(producto: p, quedan: quedan, prefijo: modoPedido ? 'Tiene' : 'Quedan', alTocar: () => alElegir(p));
+              return _ChipProducto(
+                  producto: p, quedan: quedan, prefijo: modoPedido ? 'Tiene' : 'Quedan', alTocar: () => alElegir(p));
             },
           );
         },
@@ -72,18 +74,23 @@ class _ChipProducto extends StatelessWidget {
       aviso = '$prefijo $quedan';
       colorAviso = Colores.gris;
     }
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: alTocar,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(producto.nombre, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          Text(pesos(producto.precio), style: const TextStyle(fontSize: 12, color: Colores.gris)),
-          if (aviso != null) Text(aviso, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: colorAviso)),
-        ]),
-      ),
+    return comoBoton(
+      hijo: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: alTocar,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(producto.nombre, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  Text(pesos(producto.precio), style: const TextStyle(fontSize: 12, color: Colores.gris)),
+                  if (aviso != null)
+                    Text(aviso, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: colorAviso)),
+                ]),
+          )),
     );
   }
 }
@@ -93,22 +100,24 @@ class _ChipNuevo extends StatelessWidget {
   const _ChipNuevo({required this.alTocar});
 
   @override
-  Widget build(BuildContext context) => InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: alTocar,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colores.verdeClaro,
+  Widget build(BuildContext context) => comoBoton(
+        etiqueta: 'Nuevo producto',
+        hijo: InkWell(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colores.verde, width: 1.2),
-          ),
-          alignment: Alignment.center,
-          child: const Row(children: [
-            Icon(Icons.add, color: Colores.verde, size: 18),
-            SizedBox(width: 4),
-            Text('Nuevo', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colores.verde)),
-          ]),
-        ),
+            onTap: alTocar,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colores.verdeClaro,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colores.verde, width: 1.2),
+              ),
+              alignment: Alignment.center,
+              child: const Row(children: [
+                Icon(Icons.add, color: Colores.verde, size: 18),
+                SizedBox(width: 4),
+                Text('Nuevo', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colores.verde)),
+              ]),
+            )),
       );
 }

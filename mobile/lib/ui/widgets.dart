@@ -51,16 +51,26 @@ class BotonAtras extends StatelessWidget {
   const BotonAtras({super.key});
 
   @override
-  Widget build(BuildContext context) => Material(
-        color: Colors.white,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () => Navigator.maybePop(context),
-          child: const SizedBox(width: 40, height: 40, child: Icon(Icons.chevron_left, size: 26, color: Colores.texto)),
+  Widget build(BuildContext context) => comoBoton(
+        etiqueta: 'Atrás',
+        hijo: Material(
+          color: Colors.white,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => Navigator.maybePop(context),
+            child:
+                const SizedBox(width: 48, height: 48, child: Icon(Icons.chevron_left, size: 26, color: Colores.texto)),
+          ),
         ),
       );
 }
+
+/// Hace que el lector de pantalla (TalkBack o VoiceOver) anuncie una zona tocable como botón.
+/// Sin [etiqueta] lee los textos de adentro; con [etiqueta] dice esa (para botones de solo ícono).
+Widget comoBoton({required Widget hijo, String? etiqueta, bool? seleccionado}) => MergeSemantics(
+      child: Semantics(button: true, label: etiqueta, selected: seleccionado, child: hijo),
+    );
 
 enum EstiloBoton { primario, contorno, peligro, whatsapp }
 
@@ -116,7 +126,9 @@ class ChipCaporal extends StatelessWidget {
   const ChipCaporal(this.texto, {super.key, required this.seleccionado, required this.alTocar});
 
   @override
-  Widget build(BuildContext context) => InkWell(
+  Widget build(BuildContext context) => comoBoton(
+      seleccionado: seleccionado,
+      hijo: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: alTocar,
         child: Container(
@@ -132,7 +144,7 @@ class ChipCaporal extends StatelessWidget {
                   fontWeight: seleccionado ? FontWeight.w600 : FontWeight.w500,
                   color: seleccionado ? Colores.verde : Colores.texto)),
         ),
-      );
+      ));
 }
 
 class Tarjeta extends StatelessWidget {
@@ -157,7 +169,13 @@ class Aviso extends StatelessWidget {
   final String texto;
   final Color fondo;
   final Color color;
-  const Aviso({super.key, required this.icono, required this.titulo, required this.texto, required this.fondo, required this.color});
+  const Aviso(
+      {super.key,
+      required this.icono,
+      required this.titulo,
+      required this.texto,
+      required this.fondo,
+      required this.color});
 
   @override
   Widget build(BuildContext context) => Tarjeta(
@@ -167,7 +185,9 @@ class Aviso extends StatelessWidget {
           Row(children: [
             Icon(icono, color: color, size: 22),
             const SizedBox(width: 8),
-            Expanded(child: Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colores.texto))),
+            Expanded(
+                child: Text(titulo,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colores.texto))),
           ]),
           const SizedBox(height: 6),
           Text(texto, style: TextStyle(fontSize: 14, color: color)),
@@ -184,23 +204,26 @@ class FilaLista extends StatelessWidget {
   const FilaLista({super.key, required this.inicio, required this.titulo, this.detalle, this.fin, this.alTocar});
 
   @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: alTocar,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          child: Row(children: [
-            inicio,
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colores.texto)),
-                if (detalle != null) Text(detalle!, style: const TextStyle(fontSize: 13, color: Colores.gris)),
-              ]),
-            ),
-            if (fin != null) fin!,
-          ]),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final fila = InkWell(
+      onTap: alTocar,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        child: Row(children: [
+          inicio,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colores.texto)),
+              if (detalle != null) Text(detalle!, style: const TextStyle(fontSize: 13, color: Colores.gris)),
+            ]),
+          ),
+          if (fin != null) fin!,
+        ]),
+      ),
+    );
+    return alTocar == null ? fila : comoBoton(hijo: fila);
+  }
 }
 
 /// Círculo con una letra o un icono, como en las listas del diseño.
@@ -263,23 +286,26 @@ class NavFlotante extends StatelessWidget {
             child: Row(children: [
               for (var i = 0; i < _items.length; i++)
                 Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => alTocar(i),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: i == actual ? Colores.verdeClaro : Colors.transparent,
-                        borderRadius: BorderRadius.circular(32),
+                  child: comoBoton(
+                    seleccionado: i == actual,
+                    hijo: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => alTocar(i),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: i == actual ? Colores.verdeClaro : Colors.transparent,
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(_items[i].$1, size: 26, color: i == actual ? Colores.verde : Colores.texto),
+                          const SizedBox(height: 3),
+                          Text(_items[i].$2,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: i == actual ? FontWeight.bold : FontWeight.w500,
+                                  color: i == actual ? Colores.verde : Colores.texto)),
+                        ]),
                       ),
-                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(_items[i].$1, size: 26, color: i == actual ? Colores.verde : Colores.texto),
-                        const SizedBox(height: 3),
-                        Text(_items[i].$2,
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: i == actual ? FontWeight.bold : FontWeight.w500,
-                                color: i == actual ? Colores.verde : Colores.texto)),
-                      ]),
                     ),
                   ),
                 ),

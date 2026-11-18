@@ -1,68 +1,92 @@
 # Caporal
 
-Las cuentas de su negocio, fáciles y sin señal. App móvil para micronegocios de Casanare: registrar ventas, gastos y fiados en tres toques, cobrar lo fiado y ver cuánto ganó hoy, con o sin Internet.
+Las cuentas de su negocio, fáciles y sin señal. App móvil para micronegocios de Casanare: registrar ventas, gastos y fiados en tres toques, cobrar lo fiado, llevar el inventario y ver cuánto ganó hoy, con o sin Internet.
 
-Proyecto postulado a la convocatoria CreaTIC Casanare (Gobernación de Casanare, 2026).
+Proyecto de la convocatoria CreaTIC Casanare (Gobernación de Casanare, 2026). Equipo: caporal_tech, Yopal.
 
-## Estado
+## Requisitos de la convocatoria
 
-Esqueleto técnico en construcción. Lo que hay hoy:
-
-| Parte | Qué incluye | Estado |
+| Requisito | Cómo se cumple | Dónde verlo |
 |---|---|---|
-| `backend/` | API Spring Boot 3 (Java 21): registro e inicio de sesión con JWT, bloqueo por intentos fallidos, límite de solicitudes, sincronización idempotente (`/api/v1/sync/push` y `/pull`), borrado de cuenta y datos (`DELETE /api/v1/cuenta`, Ley 1581), migraciones Flyway, pruebas de integración | Escrito; se compila y prueba en la integración continua |
-| `mobile/` | App Flutter: base local cifrada (SQLCipher), cola de salida, sincronización automática. Las 31 pantallas del diseño: splash y bienvenida, ingreso, registro en 3 pasos con autorización de datos, inicio con navegación flotante de vidrio, vender / gastar / fiar, confirmación, movimientos, detalle y corrección por reverso, le deben y cliente (cobro por WhatsApp, abonos), resumen semanal, productos, perfil, negocio, PIN, estado de envío, privacidad, eliminar datos y ayuda | Escrito; **no se ha compilado ni probado todavía** (se analiza y prueba en la integración continua) |
-| Inventario | Catálogo con cantidades: vender descuenta, "Llegó mercancía", "Conté", agotados y valor de lo guardado; funciona sin señal y se sincroniza sin duplicar (ver ADR-06) | Probado: 14 pruebas con SQLite real en la app y 10 de integración en la API |
-| `docker-compose.yml` | PostgreSQL 16 y la API en contenedores | Listo para levantar |
-| `docs/` | Arquitectura y decisiones (ADR), controles de seguridad | Primer borrador |
+| Multiplataforma | Una sola app en Flutter para Android e iOS | `mobile/` |
+| Compatibilidad | Android 12 (API 31) o superior; iOS 16 o superior | `mobile/android/app/build.gradle.kts` (`minSdk = 31`), `mobile/ios/Podfile` |
+| Modo offline | Base local cifrada (SQLCipher), cola de salida única, reintentos idempotentes y restauración completa al reinstalar o cambiar de celular | `mobile/lib/data/`, `mobile/lib/sync/`, ADR-06 en `docs/arquitectura.md` |
+| Seguridad | HTTPS con TLS 1.2 o 1.3, claves con Argon2id, sesión corta con renovación revocable, aislamiento por negocio, límites de solicitudes, respaldos cifrados | `docs/seguridad/auditoria-2026-11-17.md` |
+| En español y accesible | Toda la interfaz en español de Colombia, formularios guiados con ejemplos, botones grandes y zonas tocables anunciadas al lector de pantalla | `mobile/lib/ui/`, `mobile/test/accesibilidad_test.dart` |
+| Código documentado | Comentarios en el código, decisiones en `docs/`, instrucciones de despliegue, dependencias con licencias permisivas | Este archivo, `deploy/vps/README.md` |
 
-Pendiente (hoja de ruta):
+## Qué hace la app
 
-- Recuperar clave por SMS: pendiente (por ahora se atiende por soporte desde Ayuda).
-- Productos e inventario ya se envían al servidor; falta traerlos de vuelta (pull) al reinstalar o en un segundo teléfono. Perfil y negocio siguen solo en el teléfono.
-- Huella dactilar para entrar (hoy solo PIN de 4 números como candado de comodidad).
-- Tablero de la Gobernación y publicación en tiendas.
-- Carpetas Android/iOS: `flutter create .` (ver abajo). Para abrir WhatsApp en Android 11+ agregue en `AndroidManifest.xml` un bloque `<queries>` con `https` (guía de `url_launcher`). El número de soporte de Ayuda se define con `--dart-define=SOPORTE_WHATSAPP=57...`.
+- **Vendí, Gasté y Fié:** valor en un teclado grande o tocando productos; varios productos se suman solos.
+- **Le deben:** saldo por cliente, recordatorio de cobro por WhatsApp con la llave Bre-B y registro del pago (efectivo, Bre-B o transferencia) con número y foto del comprobante, aviso de comprobante repetido y verificación de que la plata llegó.
+- **Inventario:** cada venta descuenta, cada pedido suma, conteos y avisos de lo que se acaba.
+- **Resumen, historial y corrección:** nada se borra; un error se corrige con un movimiento de reverso.
+- **Privacidad (Ley 1581):** autorización al registrarse, exportar y borrar la cuenta; el celular de los clientes no sale del teléfono.
+- **Sin señal:** todo se guarda primero en el celular y se envía solo al volver la conexión. Al entrar en un celular nuevo o con la app reinstalada, se trae todo del servidor.
 
-Diseño de pantallas: https://www.figma.com/design/CBmo1YifjYCRJZoBgvgbnz
+## Partes
 
-## Cómo levantar la API
-
-```bash
-cp .env.example .env      # cambie las claves
-docker compose up --build
-# Salud:          http://localhost:8080/actuator/health
-# Documentación:  http://localhost:8080/swagger-ui.html
+```
+backend/   API Spring Boot 4 (Java 21), PostgreSQL 16, migraciones Flyway
+mobile/    App Flutter (Android e iOS)
+deploy/    Despliegue en un servidor con Docker
+docs/      Arquitectura, decisiones (ADR) y seguridad
 ```
 
-Pruebas del backend: `cd backend && mvn verify` (usa H2 en memoria, no necesita PostgreSQL).
+API principal: registro e ingreso (`/api/v1/auth/*`), envío de movimientos (`/api/v1/sync/push`), catálogo e inventario (`/api/v1/sync/catalogo`), respaldo para restaurar (`/api/v1/sync/respaldo`) y borrado de cuenta (`DELETE /api/v1/cuenta`).
 
-## Cómo correr la app
+## Levantar la API en local
 
-Requiere Flutter estable. La primera vez hay que generar las carpetas de plataforma:
+```bash
+cp .env.example .env      # y cambie las claves
+docker compose up --build
+# Salud: http://localhost:8080/actuator/health
+# Documentación (solo en local): http://localhost:8080/swagger-ui.html
+```
+
+Pruebas: `cd backend && mvn verify` (usa H2 en memoria; no necesita PostgreSQL).
+
+## Correr la app
+
+Requiere Flutter estable y, para iOS, Xcode.
 
 ```bash
 cd mobile
-flutter create . --platforms=android,ios --org co.caporal
 flutter pub get
-flutter run --dart-define=API_URL=http://10.0.2.2:8080   # emulador Android contra la API local
 flutter test
+flutter run --dart-define=API_URL=http://10.0.2.2:8080        # emulador Android con la API local
+flutter run --dart-define=API_URL=http://localhost:8080       # simulador iOS con la API local
 ```
+
+Contra el servidor de pruebas: `--dart-define=API_URL=https://caporal.2.25.187.25.sslip.io`. El número de soporte de Ayuda se define con `--dart-define=SOPORTE_WHATSAPP=57...`.
+
+Compilar para instalar a mano:
+
+```bash
+flutter build apk --release --dart-define=API_URL=https://caporal.2.25.187.25.sslip.io
+flutter build ios --release --dart-define=API_URL=https://caporal.2.25.187.25.sslip.io
+```
+
+Para Google Play hace falta una llave de firma propia (hoy el APK se firma con la llave de pruebas) y generar `flutter build appbundle`.
+
+## Desplegar el servidor
+
+Ver `deploy/vps/README.md`: Docker Compose detrás de un proxy con HTTPS, usuario sin privilegios, respaldos diarios cifrados, prueba de restauración y vigilancia cada 5 minutos.
 
 ## Prueba en modo avión
 
 1. Cree la cuenta con Internet.
 2. Active el modo avión. Registre ventas, gastos y fiados; cierre y abra la app: todo sigue ahí.
 3. Desactive el modo avión: el aviso pasa de "Sin señal" a "Copia de seguridad al día" y los movimientos llegan al servidor una sola vez, aunque el envío se reintente.
+4. Borre la app, instálela de nuevo y entre con el mismo celular y clave: vuelven todos los datos que ya estaban "al día".
 
-## Estructura
+## Pendiente
 
-```
-backend/   API de sincronización (Spring Boot, PostgreSQL, Flyway)
-mobile/    App Flutter offline-first
-docs/      Arquitectura, decisiones y seguridad
-```
+- Llave de firma para Google Play y publicación en Google Play y App Store.
+- Tablero de la Gobernación con datos agregados y anónimos.
+- Recuperar la clave sin soporte humano (hoy se atiende desde Ayuda).
+- Integración continua en GitHub (bloqueada por el pago de la cuenta).
 
 ## Derechos
 
-© 2026 caporal_tech. Todos los derechos reservados. Las dependencias usan licencias permisivas (BSD, MIT, Apache 2.0, PostgreSQL); ver `docs/seguridad.md`.
+© 2026 caporal_tech. Licencia por definir. Las dependencias usan licencias permisivas (BSD, MIT, Apache 2.0, PostgreSQL).

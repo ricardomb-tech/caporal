@@ -26,7 +26,8 @@ class PantallaInicio extends StatelessWidget {
     final sync = context.watch<Sincronizador>();
     final sesion = context.watch<Sesion>();
 
-    void abrir(TipoMovimiento tipo) => Navigator.push(context, MaterialPageRoute(builder: (_) => PantallaRegistrar(tipo: tipo)));
+    void abrir(TipoMovimiento tipo) =>
+        Navigator.push(context, MaterialPageRoute(builder: (_) => PantallaRegistrar(tipo: tipo)));
 
     return FutureBuilder<List<Movimiento>>(
       future: repo.ultimos(limite: 4),
@@ -62,8 +63,10 @@ class PantallaInicio extends StatelessWidget {
                     relleno: const EdgeInsets.all(22),
                     hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       const Text('Lo que ganó hoy', style: TextStyle(color: Colors.white70, fontSize: 15)),
-                      Text(pesos(x.ganancia), style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
-                      Text('Vendió ${pesos(x.ventas)}  ·  Gastó ${pesos(x.gastos)}', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                      Text(pesos(x.ganancia),
+                          style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
+                      Text('Vendió ${pesos(x.ventas)}  ·  Gastó ${pesos(x.gastos)}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 14)),
                     ]),
                   );
                 },
@@ -73,7 +76,8 @@ class PantallaInicio extends StatelessWidget {
                 const SizedBox(width: 10),
                 _Accion('Gasté', Icons.remove, Colores.rojo, Colores.rojoClaro, () => abrir(TipoMovimiento.gasto)),
                 const SizedBox(width: 10),
-                _Accion('Fié', Icons.schedule, Colores.ambarTexto, Colores.ambarClaro, () => abrir(TipoMovimiento.fiado)),
+                _Accion(
+                    'Fié', Icons.schedule, Colores.ambarTexto, Colores.ambarClaro, () => abrir(TipoMovimiento.fiado)),
               ]),
               FutureBuilder<List<Deudor>>(
                 future: repo.deudores(),
@@ -101,14 +105,24 @@ class PantallaInicio extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                        const Text('Lo último', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.gris)),
-                        GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaHistorial())),
-                          child: const Text('Ver todo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.verde)),
+                        const Text('Lo último',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.gris)),
+                        comoBoton(
+                          etiqueta: 'Ver todos los movimientos',
+                          hijo: GestureDetector(
+                            onTap: () =>
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaHistorial())),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                              child: Text('Ver todo',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.verde)),
+                            ),
+                          ),
                         ),
                       ]),
                     ),
-                    for (final m in recientes) FilaMovimiento(m: m, pendiente: (p.data ?? const <String>{}).contains(m.id)),
+                    for (final m in recientes)
+                      FilaMovimiento(m: m, pendiente: (p.data ?? const <String>{}).contains(m.id)),
                   ]),
                 ),
               ),
@@ -132,7 +146,8 @@ class _EstadoSenal extends StatelessWidget {
     if (necesitaEntrar && sync.conSenal) {
       return Align(
         alignment: Alignment.centerLeft,
-        child: GestureDetector(
+        child: comoBoton(
+            hijo: GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaIngreso())),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -140,7 +155,7 @@ class _EstadoSenal extends StatelessWidget {
             child: const Text('Entre de nuevo para guardar su copia de seguridad',
                 style: TextStyle(color: Colores.rojo, fontSize: 13, fontWeight: FontWeight.w600)),
           ),
-        ),
+        )),
       );
     }
     if (sync.restaurando) {
@@ -162,14 +177,15 @@ class _EstadoSenal extends StatelessWidget {
     }
     return Align(
       alignment: Alignment.centerLeft,
-      child: GestureDetector(
+      child: comoBoton(
+          hijo: GestureDetector(
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaEstadoEnvio())),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(16)),
           child: Text(texto, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w500)),
         ),
-      ),
+      )),
     );
   }
 }
@@ -185,21 +201,22 @@ class _Accion extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          onTap: alTocar,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(children: [
-              CircleAvatar(radius: 26, backgroundColor: fondo, child: Icon(icono, color: color, size: 28)),
-              const SizedBox(height: 8),
-              Text(texto, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-            ]),
-          ),
-        ),
-      ),
+          child: comoBoton(
+            hijo: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: alTocar,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(children: [
+                  CircleAvatar(radius: 26, backgroundColor: fondo, child: Icon(icono, color: color, size: 28)),
+                  const SizedBox(height: 8),
+                  Text(texto, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                ]),
+              ),
+            ),
+          )),
     );
   }
 }

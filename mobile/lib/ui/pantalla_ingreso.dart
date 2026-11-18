@@ -70,15 +70,20 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
                   controlador: _clave,
                   oculto: !_ver,
                   sufijo: IconButton(
+                      tooltip: _ver ? 'Ocultar la clave' : 'Mostrar la clave',
                       icon: Icon(_ver ? Icons.visibility_off_outlined : Icons.visibility_outlined),
                       onPressed: () => setState(() => _ver = !_ver)),
                 ),
                 const SizedBox(height: 10),
-                GestureDetector(
-                  onTap: () =>
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaRecuperar())),
-                  child: const Text('¿Olvidó su clave?',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colores.verde)),
+                comoBoton(
+                  hijo: GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaRecuperar())),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text('¿Olvidó su clave?',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colores.verde)),
+                    ),
+                  ),
                 ),
                 if (_error != null)
                   Padding(
