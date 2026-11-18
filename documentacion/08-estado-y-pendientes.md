@@ -34,6 +34,16 @@ Estados: ✅ hecho y probado · 🧪 hecho, falta probarlo en un celular · 🔧
 | Servicios sin cantidad (corte, reparación) | ✅ | Ya existía ("¿Quiere que la app le cuente cuántos le quedan?" → No); ahora la ayuda lo explica |
 | Compatibilidad entre versiones: un tipo de movimiento desconocido se ignora en vez de cerrar la app | ✅ | Prueba automática |
 
+### Nuevo en la versión 11 (TestFlight)
+
+| Función | Estado | Notas |
+|---|---|---|
+| Resumen fácil: ¿cuánto gané?, ¿cuánta plata me quedó?, ¿en qué gasté?, ¿cuánto vale mi negocio? (hoy, semana, mes) | 🧪 | Visto en el simulador. PM-22 |
+| El inicio usa la misma ganancia que el Resumen (antes restaba los pedidos como si fueran pérdida) | 🧪 | |
+| Ganancia de cada producto editable en Mi negocio (cualquier % de 0 a 300) | 🧪 | |
+| Clave con mayúscula, minúscula, número y símbolo, lista con ✓, ojo y repetirla | 🧪 | También la exige el servidor. PM-23 |
+| Cuenta creada sin Internet con un celular que ya tenía cuenta: botón "Entrar con mi clave" y trae los datos de esa cuenta | 🧪 | Visto en el simulador. PM-24 |
+
 ### Cuenta, datos y seguridad
 
 | Función | Estado | Notas |
@@ -89,7 +99,7 @@ Conclusión: todo lo del día a día funciona sin Internet. Solo necesitan seña
 4. **Dos celulares con versiones distintas:** si un celular tiene la versión 10 y otro una anterior, el de la versión anterior no muestra los pedidos fiados. **Hay que actualizar los dos celulares** de una misma cuenta.
 5. Lector de pantalla en las pantallas nuevas (Le debo, proveedor): PM-11.
 
-Pruebas automáticas hoy: **51 del servidor y 105 de la app**, todas pasan.
+Pruebas automáticas hoy: **52 del servidor y 114 de la app**, todas pasan.
 
 ## 4. Seguridad: qué falta
 

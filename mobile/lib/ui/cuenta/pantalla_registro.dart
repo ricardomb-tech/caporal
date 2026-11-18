@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../dominio/reglas_clave.dart';
 import '../../dominio/tipos_de_negocio.dart';
 import '../../sincronizacion/sesion.dart';
 import 'preparar_cuenta.dart';
@@ -29,6 +30,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   final _negocio = TextEditingController();
   final _municipio = TextEditingController(text: 'Yopal');
   final _clave = TextEditingController();
+  final _repetirClave = TextEditingController();
   String? _tipo;
   bool _acepta = false;
   bool _cifras = false;
@@ -110,16 +112,22 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         ),
         PasoTexto(
           pregunta: 'Cree una clave',
-          ayuda: 'Mínimo 8 letras o números. Que sea fácil de recordar para usted y difícil de adivinar: '
-              'no use su celular ni su fecha de nacimiento. Solo se la pedimos una vez en este teléfono.',
+          ayuda: 'Que sea fácil de recordar para usted y difícil de adivinar: no use su celular, su cumpleaños '
+              'ni números seguidos. Toque el ojo para ver lo que escribió.',
+          ejemplo: 'Tienda.Verde24',
           etiqueta: 'Su clave',
           controlador: _clave,
           oculto: true,
-          validador: (v) {
-            if (v.length < 8) return 'La clave debe tener mínimo 8 caracteres.';
-            if (v == _celular.text.trim()) return 'No use su celular como clave.';
-            return null;
-          },
+          validador: (v) => ReglasClave.problema(_clave.text, celular: _celular.text),
+          debajo: (v) => _RequisitosClave(clave: v),
+        ),
+        PasoTexto(
+          pregunta: 'Escriba la clave otra vez',
+          ayuda: 'Para estar seguros de que la escribió bien. Con esta clave entrará si cambia de celular.',
+          etiqueta: 'Repita su clave',
+          controlador: _repetirClave,
+          oculto: true,
+          validador: (v) => _repetirClave.text == _clave.text ? null : 'No es igual a la clave que escribió. Revísela.',
         ),
         PasoContenido(
           pregunta: 'Sus datos, en sus manos',
@@ -175,4 +183,39 @@ class _Punto extends StatelessWidget {
           Text(texto, style: const TextStyle(fontSize: 14, color: Colores.texto)),
         ]),
       );
+}
+
+/// Lo que debe tener la clave, con un ✓ verde en cada cosa que ya cumple mientras escribe.
+class _RequisitosClave extends StatelessWidget {
+  final String clave;
+  const _RequisitosClave({required this.clave});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      for (final (texto, cumple) in ReglasClave.requisitos)
+        Builder(builder: (_) {
+          final ok = cumple(clave);
+          return Semantics(
+            label: '$texto: ${ok ? 'cumple' : 'falta'}',
+            excludeSemantics: true,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(children: [
+                Icon(ok ? Icons.check_circle : Icons.radio_button_unchecked,
+                    size: 20, color: ok ? Colores.verde : Colores.gris),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(texto,
+                      style: TextStyle(
+                          fontSize: 15,
+                          color: ok ? Colores.verde : Colores.texto,
+                          fontWeight: ok ? FontWeight.w600 : FontWeight.normal)),
+                ),
+              ]),
+            ),
+          );
+        }),
+    ]);
+  }
 }

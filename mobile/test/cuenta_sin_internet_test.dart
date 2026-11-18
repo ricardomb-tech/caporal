@@ -51,7 +51,7 @@ void main() {
       celular: '3101112233',
       nombreNegocio: 'Tienda Ana',
       municipio: 'Yopal',
-      clave: 'clave-segura-1',
+      clave: 'Clave-segura-1',
       aceptaDatos: true);
 
   test('sin Internet la cuenta queda en el celular y se puede trabajar', () async {
@@ -93,10 +93,26 @@ void main() {
     respuesta = (_) => http.Response(jsonEncode({'status': 409, 'detail': 'Ese celular ya está registrado'}), 409,
         headers: {'content-type': 'application/json; charset=utf-8'});
     await s.completarRegistro();
-    expect(s.errorRegistro, contains('Entre con su clave'));
+    expect(s.errorRegistro, contains('Entre con la clave de esa cuenta'));
     expect(s.necesitaEntrar, isTrue);
     expect(almacen.containsKey('caporal_registro_pendiente'), isFalse);
     expect(s.esOtraCuenta('3101112233'), isFalse); // al entrar con ese número no se borra nada
+
+    // El aviso sigue aunque se cierre y se abra la app.
+    final otraVez = Sesion(cliente: sinInternet);
+    await otraVez.cargar();
+    expect(otraVez.errorRegistro, contains('ya tenía una cuenta'));
+    expect(otraVez.restaurado, isTrue, reason: 'La cuenta "nueva" no tenía nada que traer');
+
+    // Al entrar con la clave de la cuenta que ya existía, se trae lo que esa cuenta tenía guardado.
+    respuesta = (_) => http.Response(
+        jsonEncode({'token': 't9', 'expiraEnSegundos': 900, 'nombreNegocio': 'Tienda Ana', 'tokenRenovacion': 'r9'}),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'});
+    expect(await otraVez.ingresar('3101112233', 'Clave.de.antes1'), isNull);
+    expect(otraVez.errorRegistro, isNull);
+    expect(otraVez.restaurado, isFalse, reason: 'Debe traer el respaldo de la cuenta existente');
+    expect(almacen.containsKey('caporal_error_registro'), isFalse);
   });
 
   test('con Internet se crea de una vez', () async {

@@ -17,8 +17,11 @@ class ResumenInventario {
   /// Lo que le costó lo guardado, contando solo los productos con costo, y cuántos lo tienen.
   final int valorCosto;
   final int conCosto;
+
+  /// Lo guardado de productos SIN costo anotado, a precio de venta.
+  final int valorSinCosto;
   const ResumenInventario(this.productos, this.unidades, this.valor, this.agotados,
-      {this.valorCosto = 0, this.conCosto = 0});
+      {this.valorCosto = 0, this.conCosto = 0, this.valorSinCosto = 0});
 }
 
 /// Catálogo y cantidades. Todo se guarda primero en el teléfono y se encola para el servidor.
@@ -52,18 +55,23 @@ class Inventario extends ChangeNotifier {
 
   Future<ResumenInventario> resumen() async {
     final lista = (await productos()).where((p) => p.controlaStock).toList();
-    var unidades = 0, valor = 0, agotados = 0, valorCosto = 0, conCosto = 0;
+    var unidades = 0, valor = 0, agotados = 0, valorCosto = 0, conCosto = 0, valorSinCosto = 0;
     for (final p in lista) {
       if (p.costo != null) conCosto++;
       if (p.stock > 0) {
         unidades += p.stock;
         valor += p.stock * p.precio;
-        if (p.costo != null) valorCosto += p.stock * p.costo!;
+        if (p.costo != null) {
+          valorCosto += p.stock * p.costo!;
+        } else {
+          valorSinCosto += p.stock * p.precio;
+        }
       } else {
         agotados++;
       }
     }
-    return ResumenInventario(lista.length, unidades, valor, agotados, valorCosto: valorCosto, conCosto: conCosto);
+    return ResumenInventario(lista.length, unidades, valor, agotados,
+        valorCosto: valorCosto, conCosto: conCosto, valorSinCosto: valorSinCosto);
   }
 
   /// Ganancia de lo vendido desde [desde] en productos con costo: (precio de venta − costo) × unidades.
@@ -79,6 +87,21 @@ class Inventario extends ChangeNotifier {
         AND p.costo IS NOT NULL AND mi.precio_unitario IS NOT NULL AND m.creado_en >= ?''',
         [desde.toUtc().millisecondsSinceEpoch]);
     return (r.first['n'] as int) == 0 ? null : r.first['ganancia'] as int;
+  }
+
+  /// De lo vendido desde [desde] (contado y fiado, descontando lo corregido): cuánto fue en productos
+  /// con costo anotado y cuánto costaron esas unidades (con el costo actual del producto).
+  Future<({int vendido, int costo})> vendidoConCostoDesde(DateTime desde) async {
+    final r = await db.rawQuery('''
+      SELECT COALESCE(SUM(-mi.delta * mi.precio_unitario), 0) AS vendido,
+             COALESCE(SUM(-mi.delta * p.costo), 0) AS costo
+      FROM mov_inventario mi
+      JOIN movimiento m ON m.id = mi.movimiento_id
+      JOIN producto p ON p.id = mi.producto_id
+      WHERE m.tipo IN ('venta', 'fiado') AND mi.motivo IN ('venta', 'reverso')
+        AND p.costo IS NOT NULL AND mi.precio_unitario IS NOT NULL AND m.creado_en >= ?''',
+        [desde.toUtc().millisecondsSinceEpoch]);
+    return (vendido: r.first['vendido'] as int, costo: r.first['costo'] as int);
   }
 
   /// Historial de un producto, del más nuevo al más viejo.

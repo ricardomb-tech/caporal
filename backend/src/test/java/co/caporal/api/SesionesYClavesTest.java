@@ -34,7 +34,7 @@ class SesionesYClavesTest {
 
     private JsonNode registrar(String celular) throws Exception {
         String r = mvc.perform(post("/api/v1/auth/registro").contentType(MediaType.APPLICATION_JSON).content("""
-                {"celular":"%s","nombreNegocio":"Tienda","municipio":"Yopal","clave":"clave-segura-1","aceptaDatos":true}"""
+                {"celular":"%s","nombreNegocio":"Tienda","municipio":"Yopal","clave":"Clave-segura-1","aceptaDatos":true}"""
                 .formatted(celular))).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return json.readTree(r);
     }
@@ -115,6 +115,15 @@ class SesionesYClavesTest {
         assertThat(usuarios.findByCelular("3104000007").orElseThrow().getPasswordHash()).startsWith("{argon2}");
         mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"celular\":\"3104000007\",\"clave\":\"clave-vieja-1\"}")).andExpect(status().isOk());
+    }
+
+    @Test
+    void unaClaveSinMayusculaNumeroOSimboloNoSirveParaRegistrarse() throws Exception {
+        for (String clave : new String[] {"solominusculas", "SinNumero.", "SinSimbolo12", "SINMINUSCULA-1"}) {
+            mvc.perform(post("/api/v1/auth/registro").contentType(MediaType.APPLICATION_JSON).content("""
+                    {"celular":"3104000099","nombreNegocio":"Tienda","municipio":"Yopal","clave":"%s","aceptaDatos":true}"""
+                    .formatted(clave))).andExpect(status().isBadRequest());
+        }
     }
 
     @Test

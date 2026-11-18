@@ -44,13 +44,13 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 - **Flujo principal** (formulario guiado, una pregunta por pantalla con botón "Seguir"):
   1. Escribe su nombre, celular (10 números, empieza por 3) y, si quiere, su correo.
   2. Escribe el nombre del negocio, elige el tipo (Tienda, Restaurante, Taller, Peluquería, Ropa, Droguería, Ambulante, Servicios u Otro) y el municipio. El tipo adapta la app: categorías de productos, gastos frecuentes, ganancia recomendada y ejemplos.
-  3. Crea una clave de mínimo 8 caracteres (no puede ser su celular).
+  3. Crea una clave de mínimo 8 caracteres con **mayúscula, minúscula, número y símbolo**; una lista se marca con ✓ mientras escribe y el ojo deja ver lo escrito. No se aceptan claves fáciles de adivinar (su celular, una fecha, 6 números seguidos, las más usadas). La escribe dos veces.
   4. Lee qué se guarda y para qué, y marca que autoriza el tratamiento de sus datos (Ley 1581).
   5. Pulsa "Crear mi cuenta": el servidor crea la cuenta y abre la sesión.
 - **Alternativas:** el correo y el permiso de compartir cifras anónimas son opcionales.
 - **Sin Internet:** la cuenta queda creada en el celular y se puede trabajar de una vez; el inicio dice "Su cuenta se termina de crear cuando tenga Internet". Al volver la señal, la app la crea en el servidor y envía todo lo anotado. La clave espera cifrada en el almacén seguro del sistema solo hasta ese envío.
 - **Otra cuenta en el celular:** si el celular tiene datos de otra cuenta, avisa y los quita antes de crear la nueva (si hay anotaciones sin enviar, lo advierte en rojo), para que no se mezclen ni se vean.
-- **Excepciones:** celular ya registrado → con Internet, "Ese celular ya está registrado"; si se creó sin Internet, al volver la señal pide entrar con la clave y lo anotado pasa a esa cuenta. Dato inválido → la app explica qué corregir y no avanza.
+- **Excepciones:** celular ya registrado → con Internet, "Ese celular ya está registrado"; si se creó sin Internet, al volver la señal el inicio muestra el aviso con el botón **"Entrar con mi clave"** (el celular ya viene escrito). Al entrar con la clave de esa cuenta, la app trae lo que la cuenta ya tenía en el servidor y le suma lo anotado en el celular, sin duplicar. Dato inválido → la app explica qué corregir y no avanza.
 - **Reglas:** la clave se guarda con Argon2id; la autorización queda con fecha (`acepta_datos_en`).
 - **Resultado:** cuenta creada, sesión abierta, pantalla de inicio.
 - **Código:** App `ui/cuenta/pantalla_registro.dart`, `sincronizacion/sesion.dart`. API `cuenta/aplicacion/RegistrarNegocio`.
@@ -150,12 +150,17 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 ## CU-13 Consultar cuentas
 
-- **Actor:** dueño. **Flujo:** el inicio muestra lo que ganó hoy (ventas − gastos), lo que le deben, lo que debe a proveedores (si debe algo), el valor del inventario y lo último; "Resumen" muestra la semana; "Historial" agrupa por día y mes.
-- **Código:** `ui/inicio/pantalla_inicio.dart`, `ui/movimientos/`.
+- **Actor:** dueño. **Flujo:** el inicio muestra lo que ganó hoy, lo que le deben, lo que debe a proveedores (si debe algo), el valor del inventario y lo último. "Resumen" responde, para hoy, la semana o el mes:
+  1. **¿Cuánto ganó?** Vendió − lo que le costó esa mercancía − otros gastos. Un pedido de mercancía no se resta: la mercancía queda en el estante. Si algo vendido no tiene costo anotado, se calcula con el porcentaje de ganancia del negocio y dice "aproximado".
+  2. **¿Cuánta plata le quedó?** Entró (ventas de contado + pagos de fiados) − salió (mercancía pagada + otros gastos). Explica que lo fiado llega después y que un pedido fiado se paga después.
+  3. **¿En qué gastó?** Mercancía y cada categoría de gasto, de mayor a menor.
+  4. **¿Cuánto vale su negocio hoy?** Mercancía guardada al costo + le deben − usted debe = su capital (sin la plata en caja).
+  "Historial" agrupa por día y mes.
+- **Código:** `dominio/cuentas.dart`, `ui/movimientos/pantalla_resumen.dart`, `ui/inicio/pantalla_inicio.dart`.
 
 ## CU-14 Editar datos personales y del negocio
 
-- **Actor:** dueño. **Flujo:** en Ajustes, "Mis datos personales" (nombre, correo) y "Mi negocio" (nombre, tipo, municipio, cuánto quiere ganar en cada producto, llave Bre-B), cada uno como formulario guiado.
+- **Actor:** dueño. **Flujo:** en Ajustes, "Mis datos personales" (nombre, correo) y "Mi negocio" (nombre, tipo, municipio, cuánto quiere ganar en cada producto —toca una sugerida o escribe el porcentaje que quiera, de 0 a 300, con un ejemplo en pesos que cambia mientras escribe—, llave Bre-B), cada uno como formulario guiado.
 - **Reglas:** el celular es el usuario y no se cambia desde la app. Cada cambio queda pendiente y se envía al servidor con su hora; si dos celulares lo cambian, gana el más reciente. Si el envío falla, las ventas y fiados se siguen enviando igual.
 - **Código:** `ui/ajustes/pantalla_mis_datos.dart`, `ui/ajustes/pantalla_mi_negocio.dart`, `sincronizacion/sincronizacion_perfil.dart`. API `cuenta/aplicacion/GestionarPerfil`.
 

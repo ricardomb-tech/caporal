@@ -57,20 +57,25 @@ class PantallaInicio extends StatelessWidget {
               BotonCaporal('Anotar mi primera venta', icono: Icons.add, alTocar: () => abrir(TipoMovimiento.venta)),
               BotonCaporal('Anotar un gasto', estilo: EstiloBoton.contorno, alTocar: () => abrir(TipoMovimiento.gasto)),
             ] else ...[
-              FutureBuilder<ResumenHoy>(
-                future: repo.resumenHoy(),
+              FutureBuilder<Cuentas>(
+                future: () {
+                  final n = DateTime.now();
+                  return repo.cuentasDesde(DateTime(n.year, n.month, n.day), margen: sesion.margen);
+                }(),
                 builder: (_, r) {
-                  final x = r.data ?? const ResumenHoy(0, 0);
+                  final x = r.data ?? Cuentas(margen: sesion.margen);
+                  final perdio = x.ganancia < 0;
                   return Tarjeta(
-                    color: Colores.verde,
+                    color: perdio ? Colores.rojo : Colores.verde,
                     relleno: const EdgeInsets.all(22),
                     hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('Lo que ganó hoy', style: TextStyle(color: Colors.white70, fontSize: 15)),
-                      Text(pesos(x.ganancia),
+                      Text(
+                          '${perdio ? 'Lo que perdió hoy' : 'Lo que ganó hoy'}${x.gananciaAproximada ? ' (aprox.)' : ''}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 15)),
+                      Text(pesos(x.ganancia.abs()),
                           style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
-                      Text('Vendió ${pesos(x.ventas)}  ·  Gastó ${pesos(x.gastos)}',
+                      Text('Vendió ${pesos(x.vendio)}  ·  Le quedó en plata ${pesos(x.quedoEnPlata)}',
                           style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                      const _GananciaProductos(),
                     ]),
                   );
                 },
@@ -182,18 +187,19 @@ class _EstadoSenal extends StatelessWidget {
       );
     }
     if (necesitaEntrar && sync.conSenal) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: comoBoton(
-            hijo: GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaIngreso())),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: Colores.rojoClaro, borderRadius: BorderRadius.circular(16)),
-            child: Text(errorRegistro ?? 'Entre de nuevo para guardar su copia de seguridad',
-                style: TextStyle(color: Colores.rojo, fontSize: 13, fontWeight: FontWeight.w600)),
-          ),
-        )),
+      final celular = context.read<Sesion>().celular;
+      void entrar() =>
+          Navigator.push(context, MaterialPageRoute(builder: (_) => PantallaIngreso(celularInicial: celular)));
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: Colores.rojoClaro, borderRadius: BorderRadius.circular(18)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(errorRegistro ?? 'Entre de nuevo para guardar su copia de seguridad. Lo anotado sigue en su celular.',
+              style: const TextStyle(color: Colores.rojo, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 10),
+          BotonCaporal('Entrar con mi clave', icono: Icons.login, estilo: EstiloBoton.peligro, alTocar: entrar),
+        ]),
       );
     }
     if (sync.restaurando) {
@@ -293,32 +299,6 @@ class _TarjetaInventario extends StatelessWidget {
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaInventario())),
                 child: const Text('Ver')),
           ]),
-        );
-      },
-    );
-  }
-}
-
-/// Lo que ganó hoy en los productos que tienen costo: precio de venta menos lo que le costaron.
-/// No aparece si nada de lo vendido hoy tiene costo.
-class _GananciaProductos extends StatelessWidget {
-  const _GananciaProductos();
-
-  @override
-  Widget build(BuildContext context) {
-    final inv = context.watch<Inventario>();
-    final hoy = DateTime.now();
-    return FutureBuilder<int?>(
-      future: inv.gananciaDesde(DateTime(hoy.year, hoy.month, hoy.day)),
-      builder: (_, s) {
-        final g = s.data;
-        if (g == null) return const SizedBox.shrink();
-        return Container(
-          margin: const EdgeInsets.only(top: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(color: const Color(0x26FFFFFF), borderRadius: BorderRadius.circular(14)),
-          child: Text('Ganancia en lo vendido: ${pesos(g)}',
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
         );
       },
     );

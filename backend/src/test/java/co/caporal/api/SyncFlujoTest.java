@@ -26,7 +26,7 @@ class SyncFlujoTest {
     private String registrar(String celular) throws Exception {
         String cuerpo = """
                 {"celular":"%s","nombreNegocio":"Tienda La Esperanza","municipio":"Yopal",
-                 "clave":"clave-segura-1","aceptaDatos":true}""".formatted(celular);
+                 "clave":"Clave-segura-1","aceptaDatos":true}""".formatted(celular);
         String resp = mvc.perform(post("/api/v1/auth/registro").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
@@ -90,7 +90,7 @@ class SyncFlujoTest {
             mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(malo))
                     .andExpect(status().isUnauthorized());
         }
-        String bueno = "{\"celular\":\"3104444444\",\"clave\":\"clave-segura-1\"}";
+        String bueno = "{\"celular\":\"3104444444\",\"clave\":\"Clave-segura-1\"}";
         mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(bueno))
                 .andExpect(status().isTooManyRequests());
     }
@@ -107,7 +107,7 @@ class SyncFlujoTest {
 
         // La cuenta ya no existe: no se puede volver a entrar con ese celular.
         mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"celular\":\"3103333333\",\"clave\":\"clave-segura-1\"}"))
+                        .content("{\"celular\":\"3103333333\",\"clave\":\"Clave-segura-1\"}"))
                 .andExpect(status().isUnauthorized());
     }
 }

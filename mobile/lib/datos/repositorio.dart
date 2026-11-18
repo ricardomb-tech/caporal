@@ -6,11 +6,13 @@ import 'package:uuid/uuid.dart';
 
 import 'cola_salida.dart';
 import 'inventario.dart';
+import '../dominio/cuentas.dart';
 import '../dominio/formato.dart';
 import '../dominio/movimiento.dart';
 import '../dominio/producto.dart';
 import '../dominio/resumenes.dart';
 
+export '../dominio/cuentas.dart';
 export '../dominio/resumenes.dart';
 
 /// Todo se escribe primero en el teléfono. El servidor nunca es necesario para operar.
@@ -85,6 +87,27 @@ class Repositorio extends ChangeNotifier {
       if (f['tipo'] == 'gasto' || f['tipo'] == 'pago') gastos += total;
     }
     return ResumenHoy(ventas, gastos);
+  }
+
+  /// Las cuentas desde [inicio]: cuánto ganó, cuánta plata entró y salió y en qué gastó.
+  /// [margen]: la ganancia que eligió el dueño, para estimar el costo de lo que no lo tiene anotado.
+  Future<Cuentas> cuentasDesde(DateTime inicio, {required int margen}) async {
+    final movimientos = await desde(inicio);
+    final conCosto = await inventario.vendidoConCostoDesde(inicio);
+    return Cuentas.de(movimientos, vendidoConCosto: conCosto.vendido, costoConocido: conCosto.costo, margen: margen);
+  }
+
+  /// Lo que vale el negocio hoy: mercancía (a lo que costó) + lo que le deben − lo que debe a proveedores.
+  Future<Capital> capital({required int margen}) async {
+    final inv = await inventario.resumen();
+    final leDeben = (await deudores()).fold<int>(0, (a, d) => a + d.saldo);
+    final debe = (await deudasConProveedores()).fold<int>(0, (a, d) => a + d.saldo);
+    return Capital(
+      mercancia: inv.valorCosto + (inv.valorSinCosto * 100 / (100 + margen)).round(),
+      mercanciaAproximada: inv.valorSinCosto > 0,
+      leDeben: leDeben,
+      debe: debe,
+    );
   }
 
   Future<List<Deudor>> deudores() async {

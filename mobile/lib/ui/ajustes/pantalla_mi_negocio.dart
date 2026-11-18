@@ -5,6 +5,7 @@ import '../../dominio/tipos_de_negocio.dart';
 import '../../sincronizacion/sesion.dart';
 import '../comun/formulario_guiado.dart';
 import '../cuenta/pantalla_registro.dart';
+import 'selector_margen.dart';
 
 /// Datos del negocio, paso a paso. La llave Bre-B se usa en los recordatorios de cobro por WhatsApp.
 class PantallaMiNegocio extends StatefulWidget {
@@ -19,17 +20,9 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
   late final _municipio = TextEditingController(text: context.read<Sesion>().municipio ?? 'Yopal');
   late final _llave = TextEditingController(text: context.read<Sesion>().llaveBreB ?? '');
   late String? _tipo = context.read<Sesion>().tipoNegocio;
-  late String? _margen = _etiquetaMargen(context.read<Sesion>().margen);
+  late final _margen = TextEditingController(text: '${context.read<Sesion>().margen}');
 
   TipoDeNegocio get _negocio => TiposDeNegocio.de(_tipo);
-
-  String _etiquetaMargen(int m) => m == _negocio.margenRecomendado ? '$m % (recomendado)' : '$m %';
-
-  /// Las del tipo de negocio y, si eligió otra antes, también esa.
-  List<int> get _margenes {
-    final actual = context.read<Sesion>().margen;
-    return [..._negocio.margenes, if (!_negocio.margenes.contains(actual)) actual];
-  }
 
   Future<String?> _guardar() async {
     final sesion = context.read<Sesion>();
@@ -39,7 +32,7 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
         tipo: _tipo,
         municipioNuevo: _municipio.text.trim(),
         llave: _llave.text.trim(),
-        margenNuevo: _margen == null ? null : int.parse(_margen!.split(' ').first));
+        margenNuevo: SelectorMargen.leer(_margen.text));
     navegador.pop();
     return null;
   }
@@ -63,7 +56,7 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
           alElegir: (t) => setState(() {
             if (t == _tipo) return;
             _tipo = t;
-            _margen = _etiquetaMargen(_negocio.margenRecomendado);
+            _margen.text = '${_negocio.margenRecomendado}';
           }),
         ),
         PasoTexto(
@@ -74,14 +67,17 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
           controlador: _municipio,
           mayusculas: TextCapitalization.words,
         ),
-        PasoOpciones(
+        PasoContenido(
           pregunta: '¿Cuánto le quiere ganar en cada producto?',
-          ayuda: 'Es lo que le suma a lo que pagó para sacar el precio de venta. Si algo le cuesta \$ 2.000 y elige '
-              '25 %, la app le sugiere venderlo a \$ 2.500: gana \$ 500. Para ${_negocio.nombre.toLowerCase()} le '
-              'recomendamos ${_negocio.margenRecomendado} %.',
-          opciones: [for (final m in _margenes) _etiquetaMargen(m)],
-          valor: () => _margen,
-          alElegir: (m) => _margen = m,
+          ayuda: 'Es el porcentaje que le suma a lo que pagó para sacar el precio de venta. Toque uno o escriba el '
+              'que usted quiera. Para ${_negocio.nombre.toLowerCase()} le recomendamos ${_negocio.margenRecomendado} %.',
+          validador: () => SelectorMargen.validar(_margen.text),
+          contenido: (_, alCambiar) => SelectorMargen(
+            controlador: _margen,
+            sugeridos: _negocio.margenes.toList()..sort(),
+            recomendado: _negocio.margenRecomendado,
+            alCambiar: alCambiar,
+          ),
         ),
         PasoTexto(
           pregunta: '¿Cuál es su llave Bre-B?',

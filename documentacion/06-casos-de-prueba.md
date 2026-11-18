@@ -4,9 +4,9 @@ Caporal se prueba en tres niveles:
 
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
-| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 51 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 105 |
-| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 21 |
+| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 52 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 114 |
+| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 24 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
 
@@ -63,6 +63,10 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `si algo falla a mitad de la venta no queda nada guardado` | `inventario_test.dart` | Todo o nada |
 | `vender un producto sin control de cantidad no crea movimientos de inventario` | `inventario_test.dart` | Productos sin cuenta |
 | `muestra cada producto con su cantidad, subtotal y el total` | `lista_venta_test.dart` | Lista de la venta con varios productos |
+| `la ganancia descuenta lo que costó lo vendido, no el pedido…` / `con todo el costo anotado la ganancia es exacta…` / `el capital es mercancía al costo…` / `el resumen responde las cuatro preguntas` | `cuentas_test.dart` | Resumen (CU-13) |
+| `pide mayúscula, minúscula, número y símbolo…` / `rechaza lo fácil de adivinar…` / `al crear la clave muestra lo que le falta con un ✓…` | `reglas_clave_test.dart` | Clave segura (CU-01) |
+| `acepta cualquier número de 0 a 300` / `se puede tocar una sugerida o escribir la que uno quiera…` | `reglas_clave_test.dart` | Ganancia editable (CU-14) |
+| `unaClaveSinMayusculaNumeroOSimboloNoSirveParaRegistrarse` | `SesionesYClavesTest` | Clave segura en el servidor |
 | `busca sin importar tildes ni mayúsculas, por nombre o categoría` | `buscar_productos_test.dart` | Búsqueda |
 | `un pedido fiado suma al inventario, queda en Le debo y no cuenta como gasto` / `pagarle al proveedor baja la deuda y sí cuenta como gasto` / `un pedido fiado que ya se empezó a pagar no se corrige directamente` / `los proveedores usados se ofrecen…` | `proveedores_test.dart` | Proveedores (CU-17) |
 | `al restaurar guarda pedidos fiados y pagos, e ignora tipos que esta versión no conoce` | `proveedores_test.dart` | Compatibilidad entre versiones |
@@ -214,6 +218,9 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-19 | Buscar al vender (CU-04) | Crear productos con categoría → Vendí → escribir "cafe" y tocar una categoría | Filtra al escribir, sin importar tildes; la categoría muestra solo sus productos |
 | PM-20 | Pedido fiado y pago (CU-17) | Gasté → Pedido → productos → "Me lo fiaron" → proveedor → valor → Anotar; luego Deudas → Le debo → proveedor → Ya le pagué | El inventario sube; el gasto de hoy no cambia; Le debo y el inicio muestran la deuda; al pagar baja la deuda y sube el gasto. En modo avión funciona igual |
 | PM-21 | Otro tipo de negocio (CU-01, CU-14) | Mi negocio → Restaurante → Guardar; crear un producto y anotar un gasto | Las categorías son de restaurante (Platos, Bebidas…); los gastos incluyen Gas; la ganancia recomendada es 60 % |
+| PM-22 | Resumen fácil (CU-13) | Vender con y sin costo, fiar, pagar un pedido y el arriendo → Resumen → Hoy, Semana, Mes | Ganancia = vendido − costo − otros gastos (dice "aproximado" si falta costo); la plata cuenta solo lo que entró y salió; "En qué gastó" y "Su capital" cuadran |
+| PM-23 | Clave segura (CU-01) | Crear cuenta y escribir "tienda", luego "Tienda.Verde24"; repetirla mal | La lista marca ✓ lo que cumple; no deja seguir sin los cinco; si la repetición no coincide, lo dice |
+| PM-24 | Celular que ya tenía cuenta (CU-01) | Modo avión → crear cuenta con un celular ya registrado → anotar una venta → quitar modo avión → "Entrar con mi clave" | El aviso explica qué pasó; el celular viene escrito; al entrar aparecen los datos de la cuenta y la venta anotada, sin duplicar |
 | PM-15 | Fiado ya pagado (CU-11) | Fiar → registrar el pago → intentar corregir el fiado | Avisa "Primero corrija el pago" y no deja corregir |
 | PM-11 | Lector de pantalla | Activar VoiceOver (iOS) o TalkBack (Android) y recorrer inicio, Vendí y Le deben | Cada zona tocable se anuncia como botón con nombre; los chips dicen si están elegidos |
 | PM-14 | Huella (CU-03) | Crear PIN → activar Huella o Face ID → cerrar y abrir la app | Pide la huella o la cara y abre sin PIN; si se cancela, deja escribir el PIN |

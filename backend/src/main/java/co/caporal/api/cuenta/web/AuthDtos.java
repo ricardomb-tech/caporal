@@ -15,7 +15,10 @@ public final class AuthDtos {
             @NotBlank @Pattern(regexp = "3\\d{9}", message = "El celular debe tener 10 dígitos y empezar por 3") String celular,
             @NotBlank @Size(max = 120) String nombreNegocio,
             @NotBlank @Size(max = 80) String municipio,
-            @NotBlank @Size(min = 8, max = 72, message = "La clave debe tener mínimo 8 caracteres") String clave,
+            @NotBlank @Size(min = 8, max = 72, message = "La clave debe tener mínimo 8 caracteres")
+            // Mayúscula, minúscula, número y símbolo (la app lo explica con una lista mientras se escribe).
+            @Pattern(regexp = "(?=.*[A-ZÑ])(?=.*[a-zñ])(?=.*\\d)(?=.*[^A-Za-zÑñ0-9\\s]).*",
+                    message = "La clave debe tener mayúscula, minúscula, número y símbolo") String clave,
             @AssertTrue(message = "Debe aceptar la política de tratamiento de datos") boolean aceptaDatos) {
     }
 

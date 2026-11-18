@@ -27,6 +27,8 @@ class Sesion extends ChangeNotifier {
   static const _claveBienvenida = 'caporal_bienvenida';
   static const _claveHuella = 'caporal_huella';
   static const _claveRegistroPendiente = 'caporal_registro_pendiente';
+  // Aviso de que la cuenta creada sin Internet ya existía: sobrevive a cerrar la app hasta que entre.
+  static const _claveErrorRegistro = 'caporal_error_registro';
   static const _claveRestaurado = 'caporal_restaurado';
   static const _clavePerfilEn = 'caporal_perfil_en';
   static const _claveCambiosHasta = 'caporal_cambios_hasta';
@@ -86,6 +88,7 @@ class Sesion extends ChangeNotifier {
     bienvenidaVista = await _almacen.read(key: _claveBienvenida) == '1';
     restaurado = await _almacen.read(key: _claveRestaurado) == '1';
     registroPendiente = await _almacen.read(key: _claveRegistroPendiente) != null;
+    errorRegistro = await _almacen.read(key: _claveErrorRegistro);
     cambiosHasta = await _almacen.read(key: _claveCambiosHasta);
     final en = await _almacen.read(key: _clavePerfilEn);
     perfilEn = en == null ? null : DateTime.tryParse(en);
@@ -277,12 +280,13 @@ class Sesion extends ChangeNotifier {
       await _guardarTokens(cuerpo);
       errorRegistro = null;
     } else if (estado == 409) {
-      errorRegistro =
-          'Ese celular ya tenía una cuenta en Caporal. Entre con su clave y lo que anotó se guardará en esa cuenta.';
+      errorRegistro = 'Este celular ya tenía una cuenta en Caporal. Entre con la clave de esa cuenta: '
+          'verá lo que ya tenía guardado y lo que anotó aquí se suma a esa cuenta.';
     } else {
       errorRegistro =
           _mensaje(cuerpo, 'No pudimos terminar de crear su cuenta. Entre de nuevo con su celular y su clave.');
     }
+    if (errorRegistro != null) await _almacen.write(key: _claveErrorRegistro, value: errorRegistro);
     notifyListeners();
     return true;
   }
@@ -304,6 +308,13 @@ class Sesion extends ChangeNotifier {
     if (estado != 200) return _mensaje(cuerpo, 'No pudimos entrar. Revise los datos e intente de nuevo.');
     await _guardarTokens(cuerpo);
     errorRegistro = null;
+    await _almacen.delete(key: _claveErrorRegistro);
+    // Al entrar se trae todo lo que la cuenta tiene en el servidor y se junta con lo del celular (sin duplicar).
+    // Así, si la cuenta se había "creado" sin Internet con un celular que ya tenía cuenta, aparece lo de antes.
+    restaurado = false;
+    await _almacen.delete(key: _claveRestaurado);
+    cambiosHasta = null;
+    await _almacen.delete(key: _claveCambiosHasta);
     this.celular = celular;
     await _guardarPerfil();
     notifyListeners();
@@ -454,6 +465,7 @@ class Sesion extends ChangeNotifier {
     await _almacen.delete(key: _claveRegistroPendiente);
     registroPendiente = false;
     errorRegistro = null;
+    await _almacen.delete(key: _claveErrorRegistro);
     final r = _tokenRenovacion;
     if (r != null) await _renovador.salir(r);
     _tokenRenovacion = null;

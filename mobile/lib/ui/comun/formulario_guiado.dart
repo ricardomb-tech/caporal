@@ -40,6 +40,9 @@ class PasoTexto extends PasoGuiado {
   final TextCapitalization mayusculas;
   final String? Function(String valor)? validador;
 
+  /// Algo que se muestra debajo del campo y cambia mientras se escribe (por ejemplo, lo que le falta a la clave).
+  final Widget Function(String valor)? debajo;
+
   const PasoTexto({
     required super.pregunta,
     required super.ayuda,
@@ -53,6 +56,7 @@ class PasoTexto extends PasoGuiado {
     this.oculto = false,
     this.mayusculas = TextCapitalization.none,
     this.validador,
+    this.debajo,
   });
 
   @override
@@ -63,18 +67,55 @@ class PasoTexto extends PasoGuiado {
   }
 
   @override
-  Widget construir(BuildContext context, VoidCallback alCambiar, VoidCallback alSeguir) => TextField(
-        controller: controlador,
-        autofocus: true,
-        keyboardType: teclado,
-        obscureText: oculto,
-        textCapitalization: mayusculas,
-        textInputAction: TextInputAction.next,
-        onChanged: (_) => alCambiar(),
-        onSubmitted: (_) => alSeguir(),
-        style: const TextStyle(fontSize: 18),
-        decoration: InputDecoration(labelText: etiqueta),
-      );
+  Widget construir(BuildContext context, VoidCallback alCambiar, VoidCallback alSeguir) =>
+      _CampoDelPaso(paso: this, alCambiar: alCambiar, alSeguir: alSeguir);
+}
+
+/// El campo de un [PasoTexto]. Si es una clave, tiene el ojo para verla y revisar que la escribió bien.
+class _CampoDelPaso extends StatefulWidget {
+  final PasoTexto paso;
+  final VoidCallback alCambiar;
+  final VoidCallback alSeguir;
+  const _CampoDelPaso({required this.paso, required this.alCambiar, required this.alSeguir});
+
+  @override
+  State<_CampoDelPaso> createState() => _CampoDelPasoState();
+}
+
+class _CampoDelPasoState extends State<_CampoDelPaso> {
+  bool _verClave = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.paso;
+    final campo = TextField(
+      controller: p.controlador,
+      autofocus: true,
+      keyboardType: p.teclado,
+      obscureText: p.oculto && !_verClave,
+      textCapitalization: p.mayusculas,
+      textInputAction: TextInputAction.next,
+      onChanged: (_) => widget.alCambiar(),
+      onSubmitted: (_) => widget.alSeguir(),
+      style: const TextStyle(fontSize: 18),
+      decoration: InputDecoration(
+        labelText: p.etiqueta,
+        suffixIcon: p.oculto
+            ? IconButton(
+                tooltip: _verClave ? 'Ocultar la clave' : 'Ver la clave',
+                icon: Icon(_verClave ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                onPressed: () => setState(() => _verClave = !_verClave),
+              )
+            : null,
+      ),
+    );
+    if (p.debajo == null) return campo;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      campo,
+      const SizedBox(height: 12),
+      p.debajo!(p.controlador.text),
+    ]);
+  }
 }
 
 /// Paso para elegir una opción con botones grandes.

@@ -12,14 +12,16 @@ import '../comun/widgets.dart';
 
 /// Entrar con celular y clave. Crear la cuenta es otra pantalla de tres pasos.
 class PantallaIngreso extends StatefulWidget {
-  const PantallaIngreso({super.key});
+  /// Celular ya escrito (por ejemplo, al entrar desde el aviso de una cuenta que ya existía).
+  final String? celularInicial;
+  const PantallaIngreso({super.key, this.celularInicial});
 
   @override
   State<PantallaIngreso> createState() => _PantallaIngresoState();
 }
 
 class _PantallaIngresoState extends State<PantallaIngreso> {
-  final _celular = TextEditingController();
+  late final _celular = TextEditingController(text: widget.celularInicial ?? '');
   final _clave = TextEditingController();
   bool _cargando = false;
   bool _ver = false;

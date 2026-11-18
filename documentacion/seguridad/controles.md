@@ -6,7 +6,7 @@ Estado de los diez controles que piden las bases de la convocatoria.
 |---|---|---|
 | Comunicaciones seguras | HTTPS con TLS 1.2 y 1.3 y HSTS (Caddy); Android bloquea el tráfico sin cifrar; la app se compila con `API_URL` en `https://` | Hecho |
 | Protección de la información | Base local cifrada con SQLCipher; llave en Keystore / Keychain; claves con Argon2id; respaldos del servidor cifrados con `age`; Android no copia los datos de la app a la nube de Google | Hecho |
-| Autenticación y sesiones | Clave mínima de 8 caracteres, bloqueo por intentos, acceso de 15 min con renovación de un solo uso (reusarla revoca todo), PIN y huella en el teléfono | Hecho |
+| Autenticación y sesiones | Clave de 8 a 72 caracteres con mayúscula, minúscula, número y símbolo (exigido en la app y en el servidor; la app además rechaza claves fáciles de adivinar), bloqueo por intentos, acceso de 15 min con renovación de un solo uso (reusarla revoca todo), PIN y huella en el teléfono | Hecho |
 | Desarrollo seguro | Consultas parametrizadas; revisión OWASP Mobile y API Top 10 ([auditoría](auditoria-2026-11-17.md)); APK ofuscada y firmada con llave propia | Hecho; falta CI activa |
 | Validación de entradas | Bean Validation en todos los cuerpos de la API; validación de formularios en la app | Hecho |
 | Gestión de secretos | Variables de entorno; `.env` y llaves fuera del repositorio; sin datos del servidor en el código | Hecho |

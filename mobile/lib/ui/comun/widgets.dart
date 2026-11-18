@@ -86,10 +86,14 @@ class BotonCaporal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hijo = Row(mainAxisSize: MainAxisSize.min, children: [
-      if (icono != null) ...[Icon(icono, size: 20), const SizedBox(width: 8)],
-      Text(texto),
-    ]);
+    // Con letra grande (accesibilidad) o un botón angosto, el texto se achica en vez de salirse.
+    final hijo = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (icono != null) ...[Icon(icono, size: 20), const SizedBox(width: 8)],
+        Text(texto),
+      ]),
+    );
     if (estilo == EstiloBoton.contorno) {
       return OutlinedButton(
         onPressed: alTocar,

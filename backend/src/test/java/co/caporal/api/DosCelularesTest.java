@@ -28,14 +28,14 @@ class DosCelularesTest {
 
     private String registrar(String celular) throws Exception {
         return json.readTree(mvc.perform(post("/api/v1/auth/registro").contentType(MediaType.APPLICATION_JSON).content("""
-                {"celular":"%s","nombreNegocio":"Tienda","municipio":"Yopal","clave":"clave-segura-1","aceptaDatos":true}"""
+                {"celular":"%s","nombreNegocio":"Tienda","municipio":"Yopal","clave":"Clave-segura-1","aceptaDatos":true}"""
                 .formatted(celular))).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString())
                 .get("token").asText();
     }
 
     private String entrar(String celular) throws Exception {
         return json.readTree(mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"celular\":\"%s\",\"clave\":\"clave-segura-1\"}".formatted(celular)))
+                .content("{\"celular\":\"%s\",\"clave\":\"Clave-segura-1\"}".formatted(celular)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("token").asText();
     }
 

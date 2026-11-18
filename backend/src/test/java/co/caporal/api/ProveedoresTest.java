@@ -30,7 +30,7 @@ class ProveedoresTest {
     void unPedidoFiadoYSuPagoSeGuardanYVuelvenAlRestaurar() throws Exception {
         String token = json.readTree(mvc.perform(post("/api/v1/auth/registro").contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"celular":"3104440001","nombreNegocio":"Tienda","municipio":"Yopal","clave":"clave-segura-1","aceptaDatos":true}"""))
+                        {"celular":"3104440001","nombreNegocio":"Tienda","municipio":"Yopal","clave":"Clave-segura-1","aceptaDatos":true}"""))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).get("token").asText();
         UUID compra = UUID.randomUUID();
         UUID pago = UUID.randomUUID();
