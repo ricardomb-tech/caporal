@@ -81,7 +81,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 ## CU-05 Registrar gasto o pedido
 
 - **Actor:** dueño. **Flujo:** toca "Gasté", elige la categoría (Pedido, Mercado, Arriendo, Servicios, Transporte u Otro), escribe el valor y guarda.
-- **Alternativa "Pedido":** indica qué productos llegaron y cuántos; el inventario suma esas unidades. Si un producto no llevaba cuenta, empieza a llevarla.
+- **Alternativa "Pedido":** indica qué productos llegaron, cuántos y, si quiere, **cuánto le costó cada uno**; el inventario suma esas unidades y el costo queda en el producto. Si con ese costo gana menos de lo que eligió, la app ofrece subir el precio al sugerido. Si un producto no llevaba cuenta, empieza a llevarla.
 - **Código:** `ui/anotar/pantalla_registrar.dart`, `ui/anotar/panel_pedido.dart`.
 
 ## CU-06 Registrar fiado
@@ -137,7 +137,8 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 ## CU-12 Llevar el inventario
 
 - **Actor:** dueño. **Flujos:** crear producto (formulario guiado); editar nombre o precio; anotar que llegó mercancía; contar lo que hay (se anota solo la diferencia); quitar un producto (se oculta y conserva su historial).
-- **Reglas:** la cantidad es la suma de los movimientos de inventario; avisa "Quedan N" con 5 o menos y "Agotado" en 0.
+- **Costo y precio:** al crear un producto pregunta a cuánto lo compra (opcional) y deja escrito el precio sugerido para ganar el margen del negocio (15–30 %, elegido en Mi negocio), redondeado a un valor de tienda y hacia arriba. Al editar muestra "Gana $ X por cada una (Y %)" mientras escribe. El inventario muestra cuánto costó lo guardado y el inicio "Ganancia en lo vendido" del día (precio de venta menos costo, descontando ventas corregidas, con el costo de la última compra).
+- **Reglas:** la cantidad es la suma de los movimientos de inventario; avisa "Quedan N" con 5 o menos y "Agotado" en 0. El costo es opcional: sin él todo funciona como antes.
 - **Código:** `ui/inventario/`, `datos/inventario.dart`.
 
 ## CU-13 Consultar cuentas
@@ -147,7 +148,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 ## CU-14 Editar datos personales y del negocio
 
-- **Actor:** dueño. **Flujo:** en Ajustes, "Mis datos personales" (nombre, correo) y "Mi negocio" (nombre, tipo, municipio, llave Bre-B), cada uno como formulario guiado.
+- **Actor:** dueño. **Flujo:** en Ajustes, "Mis datos personales" (nombre, correo) y "Mi negocio" (nombre, tipo, municipio, cuánto quiere ganar en cada producto, llave Bre-B), cada uno como formulario guiado.
 - **Reglas:** el celular es el usuario y no se cambia desde la app. Cada cambio queda pendiente y se envía al servidor con su hora; si dos celulares lo cambian, gana el más reciente. Si el envío falla, las ventas y fiados se siguen enviando igual.
 - **Código:** `ui/ajustes/pantalla_mis_datos.dart`, `ui/ajustes/pantalla_mi_negocio.dart`, `sincronizacion/sincronizacion_perfil.dart`. API `cuenta/aplicacion/GestionarPerfil`.
 

@@ -3,6 +3,8 @@ package co.caporal.api.cuenta.web;
 import co.caporal.api.cuenta.dominio.Perfil;
 import co.caporal.api.cuenta.dominio.Usuario;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -21,16 +23,18 @@ public final class PerfilDtos {
             @Size(max = 30) String tipoNegocio,
             @Size(max = 60) String llaveBreB,
             boolean compartirCifras,
+            @Min(0) @Max(300) Integer margen,
             @NotNull Instant modificadoEn) {
 
         public Perfil aDominio() {
-            return new Perfil(nombreNegocio, municipio, nombrePersona, correo, tipoNegocio, llaveBreB, compartirCifras);
+            return new Perfil(nombreNegocio, municipio, nombrePersona, correo, tipoNegocio, llaveBreB, compartirCifras,
+                    margen);
         }
 
         /** modificadoEn es null si el teléfono nunca ha enviado el perfil. */
         public static PerfilDto de(Usuario u) {
             return new PerfilDto(u.getNombreNegocio(), u.getMunicipio(), u.getNombrePersona(), u.getCorreo(),
-                    u.getTipoNegocio(), u.getLlaveBreB(), u.isCompartirCifras(), u.getPerfilEn());
+                    u.getTipoNegocio(), u.getLlaveBreB(), u.isCompartirCifras(), u.getMargen(), u.getPerfilEn());
         }
     }
 }

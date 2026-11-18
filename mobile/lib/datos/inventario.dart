@@ -9,9 +9,16 @@ import '../dominio/producto.dart';
 class ResumenInventario {
   final int productos;
   final int unidades;
+
+  /// Lo que vale lo guardado a precio de venta ("si lo vende todo").
   final int valor;
   final int agotados;
-  const ResumenInventario(this.productos, this.unidades, this.valor, this.agotados);
+
+  /// Lo que le costó lo guardado, contando solo los productos con costo, y cuántos lo tienen.
+  final int valorCosto;
+  final int conCosto;
+  const ResumenInventario(this.productos, this.unidades, this.valor, this.agotados,
+      {this.valorCosto = 0, this.conCosto = 0});
 }
 
 /// Catálogo y cantidades. Todo se guarda primero en el teléfono y se encola para el servidor.
@@ -45,16 +52,33 @@ class Inventario extends ChangeNotifier {
 
   Future<ResumenInventario> resumen() async {
     final lista = (await productos()).where((p) => p.controlaStock).toList();
-    var unidades = 0, valor = 0, agotados = 0;
+    var unidades = 0, valor = 0, agotados = 0, valorCosto = 0, conCosto = 0;
     for (final p in lista) {
+      if (p.costo != null) conCosto++;
       if (p.stock > 0) {
         unidades += p.stock;
         valor += p.stock * p.precio;
+        if (p.costo != null) valorCosto += p.stock * p.costo!;
       } else {
         agotados++;
       }
     }
-    return ResumenInventario(lista.length, unidades, valor, agotados);
+    return ResumenInventario(lista.length, unidades, valor, agotados, valorCosto: valorCosto, conCosto: conCosto);
+  }
+
+  /// Ganancia de lo vendido desde [desde] en productos con costo: (precio de venta − costo) × unidades.
+  /// Las ventas corregidas se descuentan. Null si nada de lo vendido tiene costo.
+  /// Usa el costo actual del producto (el de la última compra).
+  Future<int?> gananciaDesde(DateTime desde) async {
+    final r = await db.rawQuery('''
+      SELECT COUNT(*) AS n, COALESCE(SUM(-mi.delta * (mi.precio_unitario - p.costo)), 0) AS ganancia
+      FROM mov_inventario mi
+      JOIN movimiento m ON m.id = mi.movimiento_id
+      JOIN producto p ON p.id = mi.producto_id
+      WHERE m.tipo IN ('venta', 'fiado') AND mi.motivo IN ('venta', 'reverso')
+        AND p.costo IS NOT NULL AND mi.precio_unitario IS NOT NULL AND m.creado_en >= ?''',
+        [desde.toUtc().millisecondsSinceEpoch]);
+    return (r.first['n'] as int) == 0 ? null : r.first['ganancia'] as int;
   }
 
   /// Historial de un producto, del más nuevo al más viejo.
@@ -72,7 +96,7 @@ class Inventario extends ChangeNotifier {
   // ---- Catálogo ----
 
   /// [stockInicial] null = no lleva la cuenta de cuántos tiene; un número = sí la lleva, empezando ahí.
-  Future<Producto> crearProducto({required String nombre, required int precio, int? stockInicial}) async {
+  Future<Producto> crearProducto({required String nombre, required int precio, int? stockInicial, int? costo}) async {
     final id = const Uuid().v4();
     final t = _ahora();
     await db.transaction((tx) async {
@@ -88,6 +112,8 @@ class Inventario extends ChangeNotifier {
         'precio_en': t,
         'controla_en': t,
         'activo_en': t,
+        if (costo != null) 'costo': costo,
+        if (costo != null) 'costo_en': t,
       });
       await cola.encolar(tx, TipoCola.producto, id);
       if (stockInicial != null && stockInicial > 0) {
@@ -99,7 +125,7 @@ class Inventario extends ChangeNotifier {
   }
 
   /// Solo cambia (y solo marca como nuevos) los campos que de verdad son distintos.
-  Future<void> editarProducto(String id, {String? nombre, int? precio, bool? controlaStock}) async {
+  Future<void> editarProducto(String id, {String? nombre, int? precio, bool? controlaStock, int? costo}) async {
     await db.transaction((tx) async {
       final filas = await tx.query('producto', where: 'id = ?', whereArgs: [id]);
       if (filas.isEmpty) return;
@@ -114,6 +140,9 @@ class Inventario extends ChangeNotifier {
       }
       if (controlaStock != null && (controlaStock ? 1 : 0) != actual['controla_stock']) {
         cambios.addAll({'controla_stock': controlaStock ? 1 : 0, 'controla_en': t});
+      }
+      if (costo != null && costo != actual['costo']) {
+        cambios.addAll({'costo': costo, 'costo_en': t});
       }
       if (cambios.isEmpty) return;
       await tx.update('producto', cambios, where: 'id = ?', whereArgs: [id]);
@@ -168,6 +197,8 @@ class Inventario extends ChangeNotifier {
         await _asegurarControl(tx, l.producto.id);
         await _evento(tx,
             productoId: l.producto.id, delta: l.cantidad, motivo: MotivoInventario.compra, movimientoId: m.id);
+        // El costo de esta compra queda como costo del producto; el precio, si el tendero lo cambió.
+        await _actualizarCostoYPrecio(tx, l);
       } else if (m.tipo == TipoMovimiento.venta || m.tipo == TipoMovimiento.fiado) {
         if (!l.producto.controlaStock) continue;
         await _evento(tx,
@@ -178,6 +209,19 @@ class Inventario extends ChangeNotifier {
             precioUnitario: l.producto.precio);
       }
     }
+  }
+
+  Future<void> _actualizarCostoYPrecio(DatabaseExecutor tx, LineaVenta l) async {
+    final t = _ahora();
+    final cambios = <String, Object?>{
+      if (l.costo != null) 'costo': l.costo,
+      if (l.costo != null) 'costo_en': t,
+      if (l.precioNuevo != null) 'precio': l.precioNuevo,
+      if (l.precioNuevo != null) 'precio_en': t,
+    };
+    if (cambios.isEmpty) return;
+    await tx.update('producto', cambios, where: 'id = ?', whereArgs: [l.producto.id]);
+    await cola.encolar(tx, TipoCola.producto, l.producto.id);
   }
 
   /// Corregir una venta devuelve sus unidades; corregir un pedido las vuelve a sacar.

@@ -35,7 +35,7 @@ class BaseLocal {
   }
 
   /// Versión del esquema. Súbala y agregue su paso en [actualizar] cada vez que cambie una tabla.
-  static const version = 5;
+  static const version = 6;
 
   static Future<void> crear(Database db, int version) async {
     await db.execute('''
@@ -72,6 +72,10 @@ class BaseLocal {
     if (anterior < 5) {
       await db.execute('ALTER TABLE movimiento ADD COLUMN referencia TEXT');
       await _crearComprobantes(db);
+    }
+    if (anterior < 6) {
+      await db.execute('ALTER TABLE producto ADD COLUMN costo INTEGER');
+      await db.execute('ALTER TABLE producto ADD COLUMN costo_en INTEGER NOT NULL DEFAULT 0');
     }
   }
 
@@ -117,7 +121,9 @@ class BaseLocal {
         nombre_en INTEGER NOT NULL,
         precio_en INTEGER NOT NULL,
         controla_en INTEGER NOT NULL,
-        activo_en INTEGER NOT NULL
+        activo_en INTEGER NOT NULL,
+        costo INTEGER,
+        costo_en INTEGER NOT NULL DEFAULT 0
       )''');
     await _crearMovInventario(db);
   }

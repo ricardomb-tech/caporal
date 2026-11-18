@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import '../dominio/precios.dart';
 import 'renovador_sesion.dart';
 
 /// Sesión del negocio y datos del perfil. Todo vive en el almacén seguro del sistema
@@ -39,6 +40,9 @@ class Sesion extends ChangeNotifier {
   String? municipio;
   String? llaveBreB;
   bool compartirCifras = false;
+
+  /// Cuánto quiere ganar sobre el costo de cada producto, en %.
+  int margen = Precios.margenRecomendado;
 
   bool bienvenidaVista = false;
 
@@ -85,6 +89,7 @@ class Sesion extends ChangeNotifier {
       municipio = p['municipio'] as String?;
       llaveBreB = p['llave'] as String?;
       compartirCifras = p['cifras'] == true;
+      margen = (p['margen'] as int?) ?? Precios.margenRecomendado;
     }
     notifyListeners();
   }
@@ -99,6 +104,7 @@ class Sesion extends ChangeNotifier {
         'municipio': municipio,
         'llave': llaveBreB,
         'cifras': compartirCifras,
+        'margen': margen,
       }));
 
   /// El perfil cambió en este teléfono: se guarda la hora y queda pendiente de enviar.
@@ -118,6 +124,7 @@ class Sesion extends ChangeNotifier {
         'tipoNegocio': tipoNegocio,
         'llaveBreB': llaveBreB,
         'compartirCifras': compartirCifras,
+        'margen': margen,
         'modificadoEn': (perfilEn ?? DateTime.now().toUtc()).toIso8601String(),
       };
 
@@ -140,6 +147,7 @@ class Sesion extends ChangeNotifier {
       tipoNegocio = p['tipoNegocio'] as String?;
       llaveBreB = p['llaveBreB'] as String?;
       compartirCifras = p['compartirCifras'] == true;
+      margen = (p['margen'] as int?) ?? margen;
       perfilEn = enServidor;
       perfilPendiente = false;
       await _almacen.write(key: _claveNegocio, value: nombreNegocio);
@@ -170,7 +178,8 @@ class Sesion extends ChangeNotifier {
   }
 
   Future<void> guardarNegocio(
-      {required String nombre, String? tipo, required String municipioNuevo, String? llave}) async {
+      {required String nombre, String? tipo, required String municipioNuevo, String? llave, int? margenNuevo}) async {
+    if (margenNuevo != null) margen = margenNuevo;
     nombreNegocio = nombre;
     tipoNegocio = tipo;
     municipio = municipioNuevo;

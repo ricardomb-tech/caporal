@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../datos/inventario.dart';
+import '../../dominio/formato.dart';
+import '../../dominio/precios.dart';
 import '../../dominio/producto.dart';
-import 'pantalla_nuevo_producto.dart';
+import '../../sincronizacion/sesion.dart';
 import '../comun/tema.dart';
+import 'pantalla_nuevo_producto.dart';
 
 /// Crear o editar un producto. Devuelve el producto guardado, o null si se canceló o se quitó.
 /// [conCantidadInicial] en false cuando la cantidad la pone otra anotación (por ejemplo, un pedido que llegó).
@@ -30,6 +33,7 @@ class _DialogoProducto extends StatefulWidget {
 class _DialogoProductoState extends State<_DialogoProducto> {
   late final _nombre = TextEditingController(text: widget.producto?.nombre ?? '');
   late final _precio = TextEditingController(text: widget.producto?.precio.toString() ?? '');
+  late final _costo = TextEditingController(text: widget.producto?.costo?.toString() ?? '');
   final _cantidad = TextEditingController();
   late bool _llevaCuenta = widget.producto?.controlaStock ?? true;
   bool _guardando = false;
@@ -45,12 +49,16 @@ class _DialogoProductoState extends State<_DialogoProducto> {
     if (nombre.length > 60) return 'El nombre es muy largo (máximo 60 letras).';
     if (precio == null || precio < 1) return 'Escriba el precio en pesos, por ejemplo 3000.';
     if (precio > 99999999) return 'Ese precio es muy alto. Revíselo.';
+    if (_costo.text.trim().isNotEmpty) {
+      final c = int.tryParse(_costo.text.trim());
+      if (c == null || c < 0 || c > 99999999) return 'El costo debe ser un número en pesos, por ejemplo 2000.';
+    }
     if (_nuevo && _llevaCuenta && _cantidad.text.trim().isNotEmpty) {
       final c = int.tryParse(_cantidad.text.trim());
       if (c == null || c < 0 || c > 1000000) return 'La cantidad debe ser un número, por ejemplo 12.';
     }
-    final repetido = (await inv.productos()).any(
-        (p) => p.id != widget.producto?.id && p.nombre.toLowerCase() == nombre.toLowerCase());
+    final repetido = (await inv.productos())
+        .any((p) => p.id != widget.producto?.id && p.nombre.toLowerCase() == nombre.toLowerCase());
     if (repetido) return 'Ya tiene un producto con ese nombre.';
     return null;
   }
@@ -68,12 +76,14 @@ class _DialogoProductoState extends State<_DialogoProducto> {
     }
     final nombre = _nombre.text.trim();
     final precio = int.parse(_precio.text.trim());
+    final costo = int.tryParse(_costo.text.trim());
     final Producto resultado;
     if (_nuevo) {
       final cantidad = _llevaCuenta ? (int.tryParse(_cantidad.text.trim()) ?? 0) : null;
-      resultado = await inv.crearProducto(nombre: nombre, precio: precio, stockInicial: cantidad);
+      resultado = await inv.crearProducto(nombre: nombre, precio: precio, stockInicial: cantidad, costo: costo);
     } else {
-      await inv.editarProducto(widget.producto!.id, nombre: nombre, precio: precio, controlaStock: _llevaCuenta);
+      await inv.editarProducto(widget.producto!.id,
+          nombre: nombre, precio: precio, controlaStock: _llevaCuenta, costo: costo);
       resultado = (await inv.producto(widget.producto!.id))!;
     }
     if (mounted) Navigator.pop(context, resultado);
@@ -96,9 +106,17 @@ class _DialogoProductoState extends State<_DialogoProducto> {
               decoration: const InputDecoration(labelText: 'Nombre')),
           const SizedBox(height: 10),
           TextField(
+              controller: _costo,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(labelText: '¿A cuánto lo compra? (opcional)')),
+          const SizedBox(height: 10),
+          TextField(
               controller: _precio,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Precio en pesos')),
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(labelText: '¿A cuánto lo vende?')),
+          _InfoGanancia(costo: int.tryParse(_costo.text.trim()), precio: int.tryParse(_precio.text.trim())),
           const SizedBox(height: 6),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -119,11 +137,34 @@ class _DialogoProductoState extends State<_DialogoProducto> {
         ]),
       ),
       actions: [
-        if (!_nuevo)
-          TextButton(onPressed: _quitar, child: const Text('Quitar', style: TextStyle(color: Colores.rojo))),
+        if (!_nuevo) TextButton(onPressed: _quitar, child: const Text('Quitar', style: TextStyle(color: Colores.rojo))),
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(onPressed: _guardando ? null : _guardar, child: const Text('Guardar')),
       ],
+    );
+  }
+}
+
+/// "Gana $ 500 por cada una (25 %)" mientras escribe, y el precio sugerido si gana menos de lo elegido.
+class _InfoGanancia extends StatelessWidget {
+  final int? costo;
+  final int? precio;
+  const _InfoGanancia({required this.costo, required this.precio});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = costo, p = precio;
+    if (c == null || c <= 0 || p == null || p <= 0) return const SizedBox.shrink();
+    final margen = context.read<Sesion>().margen;
+    final menos = Precios.ganaMenos(p, c, margen);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        menos
+            ? '${Precios.explicar(p, c)}. Para ganar $margen %: ${pesos(Precios.sugerido(c, margen))}.'
+            : Precios.explicar(p, c),
+        style: TextStyle(fontSize: 13, color: menos ? Colores.ambarTexto : Colores.verde, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }

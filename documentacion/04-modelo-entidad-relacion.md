@@ -38,6 +38,7 @@ erDiagram
         varchar llave_breb "para los recordatorios de cobro"
         boolean compartir_cifras
         timestamptz perfil_en "cuándo cambió el perfil en el teléfono"
+        int margen "cuánto quiere ganar, en %"
     }
     MOVIMIENTO {
         uuid id PK "generado en el teléfono"
@@ -64,6 +65,8 @@ erDiagram
         timestamptz precio_en
         timestamptz controla_en
         timestamptz activo_en
+        bigint costo "lo que le cuesta una unidad (opcional)"
+        timestamptz costo_en
         timestamptz recibido_en
     }
     MOV_INVENTARIO {
@@ -95,11 +98,11 @@ erDiagram
 |---|---|---|
 | `usuario` | Cuenta y perfil del negocio | `celular` único; 5 intentos fallidos bloquean 15 minutos; claves bcrypt antiguas se migran a Argon2id al entrar; el perfil se reemplaza solo por uno con `perfil_en` más reciente |
 | `movimiento` | Ventas, gastos, fiados y abonos | Inmutable; `valor > 0`; el signo lo da el `tipo`; `reverso_de` anula otro movimiento; índice por (`usuario_id`, `recibido_en`) |
-| `producto` | Catálogo | Cada campo se fusiona por su `*_en` más reciente; un producto de otro negocio nunca se modifica |
+| `producto` | Catálogo | Cada campo se fusiona por su `*_en` más reciente (también el costo, que es opcional: un envío sin costo no borra el guardado); un producto de otro negocio nunca se modifica |
 | `mov_inventario` | Cambios de cantidad | Inmutable; `delta ≠ 0`; cantidad = suma de `delta` por producto |
 | `sesion` | Tokens de renovación | Solo la huella SHA-256; un solo uso; reutilizar uno revocado revoca todas las sesiones del negocio |
 
-Migraciones: `backend/src/main/resources/db/migration/V1__esquema_inicial.sql` (usuario, movimiento), `V2__catalogo_e_inventario.sql`, `V3__sesiones_y_hash.sql`, `V4__comprobante_de_pago.sql`, `V5__perfil_del_negocio.sql`.
+Migraciones: `backend/src/main/resources/db/migration/V1__esquema_inicial.sql` (usuario, movimiento), `V2__catalogo_e_inventario.sql`, `V3__sesiones_y_hash.sql`, `V4__comprobante_de_pago.sql`, `V5__perfil_del_negocio.sql`, `V6__costo_y_margen.sql`.
 
 ## Teléfono (SQLite + SQLCipher, versión 5)
 
@@ -136,6 +139,8 @@ erDiagram
         int precio_en
         int controla_en
         int activo_en
+        int costo
+        int costo_en
     }
     MOV_INVENTARIO {
         text id PK
@@ -179,4 +184,4 @@ erDiagram
 
 Fuera de la base, en el almacén seguro del sistema (Keychain en iOS, Keystore en Android): llave de cifrado de la base, token de acceso, token de renovación, PIN (con sal y hash) y perfil (con la hora de su último cambio y si falta enviarlo; el PIN nunca sale del teléfono).
 
-Migraciones locales: `mobile/lib/datos/base_local.dart` (`version = 5`, de v2 a v5 sin pérdida de datos; probadas en `test/inventario_test.dart` y `test/pago_test.dart`).
+Migraciones locales: `mobile/lib/datos/base_local.dart` (`version = 6`, de v2 a v6 sin pérdida de datos; probadas en `test/inventario_test.dart` y `test/pago_test.dart`).

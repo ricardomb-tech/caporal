@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../datos/inventario.dart';
 import '../../dominio/producto.dart';
 import '../../dominio/formato.dart';
+import '../../dominio/precios.dart';
 import 'dialogo_producto.dart';
 import 'dialogo_stock.dart';
 import '../comun/tema.dart';
@@ -42,7 +43,8 @@ class PantallaProducto extends StatelessWidget {
         final p = s.data?.$1;
         final historial = s.data?.$2 ?? const <MovInventario>[];
         if (p == null || !p.activo) {
-          return const Pantalla(titulo: 'Producto', hijos: [Tarjeta(hijo: Text('Este producto ya no está en su lista.'))]);
+          return const Pantalla(
+              titulo: 'Producto', hijos: [Tarjeta(hijo: Text('Este producto ya no está en su lista.'))]);
         }
         return Pantalla(
           titulo: p.nombre,
@@ -55,15 +57,34 @@ class PantallaProducto extends StatelessWidget {
                     const Text('Tiene', style: TextStyle(color: Colores.gris, fontSize: 14)),
                     Text(p.controlaStock ? '${p.stock}' : '—',
                         style: TextStyle(
-                            fontSize: 38, fontWeight: FontWeight.bold, color: p.agotado ? Colores.rojo : Colores.texto)),
-                    if (p.agotado) const Text('Agotado', style: TextStyle(color: Colores.rojo, fontWeight: FontWeight.w600)),
-                    if (p.pocas) const Text('Se está acabando', style: TextStyle(color: Colores.ambarTexto, fontWeight: FontWeight.w600)),
+                            fontSize: 38,
+                            fontWeight: FontWeight.bold,
+                            color: p.agotado ? Colores.rojo : Colores.texto)),
+                    if (p.agotado)
+                      const Text('Agotado', style: TextStyle(color: Colores.rojo, fontWeight: FontWeight.w600)),
+                    if (p.pocas)
+                      const Text('Se está acabando',
+                          style: TextStyle(color: Colores.ambarTexto, fontWeight: FontWeight.w600)),
                     if (!p.controlaStock)
                       const Text('No lleva la cuenta de cantidad', style: TextStyle(color: Colores.gris, fontSize: 13)),
                   ]),
                 ),
-                if (p.controlaStock) Text(pesos(p.stock * p.precio), style: const TextStyle(fontSize: 16, color: Colores.gris)),
+                if (p.controlaStock)
+                  Text(pesos(p.stock * p.precio), style: const TextStyle(fontSize: 16, color: Colores.gris)),
               ]),
+            ),
+            Tarjeta(
+              hijo: p.costo == null
+                  ? const Text('Aún no sabe cuánto le gana. Toque Editar y escriba a cuánto lo compra.',
+                      style: TextStyle(fontSize: 14, color: Colores.gris))
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Lo compra a ${pesos(p.costo!)} · lo vende a ${pesos(p.precio)}',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      Text(Precios.explicar(p.precio, p.costo!),
+                          style: TextStyle(
+                              fontSize: 14,
+                              color: Precios.ganancia(p.precio, p.costo!) < 0 ? Colores.rojo : Colores.verde)),
+                    ]),
             ),
             Row(children: [
               Expanded(
@@ -72,7 +93,9 @@ class PantallaProducto extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                   child: BotonCaporal('Editar',
-                      estilo: EstiloBoton.contorno, icono: Icons.edit_outlined, alTocar: () => mostrarDialogoProducto(context, producto: p))),
+                      estilo: EstiloBoton.contorno,
+                      icono: Icons.edit_outlined,
+                      alTocar: () => mostrarDialogoProducto(context, producto: p))),
             ]),
             if (historial.isNotEmpty)
               Tarjeta(
@@ -80,19 +103,22 @@ class PantallaProducto extends StatelessWidget {
                 hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Padding(
                     padding: EdgeInsets.only(top: 10, bottom: 4),
-                    child: Text('Historial', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.gris)),
+                    child: Text('Historial',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.gris)),
                   ),
                   for (final (i, m) in historial.indexed) ...[
                     if (i > 0) lineaSuave,
                     FilaLista(
-                      inicio: Insignia.icono(m.delta > 0 ? Icons.add : Icons.remove,
-                          m.delta > 0 ? Colores.verde : Colores.rojo,
+                      inicio: Insignia.icono(
+                          m.delta > 0 ? Icons.add : Icons.remove, m.delta > 0 ? Colores.verde : Colores.rojo,
                           fondo: m.delta > 0 ? Colores.verdeClaro : Colores.rojoClaro),
                       titulo: _motivo(m),
                       detalle: _cuando(m.creadoEn),
                       fin: Text('${m.delta > 0 ? '+' : ''}${m.delta}',
                           style: TextStyle(
-                              fontSize: 17, fontWeight: FontWeight.bold, color: m.delta > 0 ? Colores.verde : Colores.rojo)),
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: m.delta > 0 ? Colores.verde : Colores.rojo)),
                     ),
                   ],
                 ]),

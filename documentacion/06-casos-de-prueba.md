@@ -4,9 +4,9 @@ Caporal se prueba en tres niveles:
 
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
-| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 47 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 75 |
-| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 15 |
+| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 51 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 87 |
+| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 16 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
 
@@ -156,6 +156,13 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `contar de nuevo anota solo la diferencia` | `inventario_test.dart` | Conteo |
 | `quitar un producto lo oculta pero conserva su historial` | `inventario_test.dart` | Nada se borra |
 | `el resumen cuenta unidades, valor y agotados` | `inventario_test.dart` | Resumen de inventario |
+| `sugiere el precio con la ganancia elegida y lo redondea a un valor de tienda` / `nunca sugiere ganar menos de lo elegido` | `precios_test.dart` | Regla del precio sugerido |
+| `al llegar un pedido, el costo y el precio nuevo quedan en el producto` | `costo_test.dart` | Costo desde el pedido |
+| `la ganancia del día cuenta lo vendido con costo y descuenta las ventas corregidas` | `costo_test.dart` | Ganancia real |
+| `al restaurar, el costo más reciente gana y uno sin costo no borra el que hay` | `costo_test.dart` | Sincronización del costo |
+| `con el costo escrito, sugiere el precio para ganar lo elegido y lo deja escrito` | `nuevo_producto_costo_test.dart` | Producto nuevo |
+| `al llegar mercancía más cara, avisa que gana menos y ofrece subir el precio` | `pedido_costo_test.dart` | Pedido |
+| `unaAppAnteriorSinCostoNoBorraElCostoGuardado` / `elCostoMasRecienteGana` / `elMargenDelNegocioSeGuardaEnElPerfil` | `CostoTest` | Servidor |
 
 ### CU-15: borrar mis datos
 
@@ -190,6 +197,7 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-08 | Pago con comprobante (CU-10) | Ya me pagó → Todo → Bre-B → número → foto → marcar "ya vi la plata" | Deuda en 0; el detalle muestra forma de pago, comprobante y foto |
 | PM-09 | Comprobante repetido (CU-10) | Registrar otro pago con el mismo número | Aviso con fecha, cliente y valor; no guarda |
 | PM-10 | Corregir (CU-11) | Abrir una venta con productos → Corregir | Abre con el mismo valor y productos; al guardar, aparece el reverso y la venta nueva; el original sigue en el historial |
+| PM-16 | Costo y precio (CU-12) | Mi negocio → 25 %; producto nuevo con costo 2000; pedido con costo 2200 | Sugiere $ 2.500; en el pedido avisa que gana 14 % y ofrece subir a $ 2.800; el inicio muestra "Ganancia en lo vendido" |
 | PM-15 | Fiado ya pagado (CU-11) | Fiar → registrar el pago → intentar corregir el fiado | Avisa "Primero corrija el pago" y no deja corregir |
 | PM-11 | Lector de pantalla | Activar VoiceOver (iOS) o TalkBack (Android) y recorrer inicio, Vendí y Le deben | Cada zona tocable se anuncia como botón con nombre; los chips dicen si están elegidos |
 | PM-14 | Huella (CU-03) | Crear PIN → activar Huella o Face ID → cerrar y abrir la app | Pide la huella o la cara y abre sin PIN; si se cancela, deja escribir el PIN |

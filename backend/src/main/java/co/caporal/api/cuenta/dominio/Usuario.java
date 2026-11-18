@@ -40,6 +40,8 @@ public class Usuario {
     /** Cuándo se cambió el perfil en el teléfono (null si nunca se ha enviado). */
     @Column(name = "perfil_en")
     private Instant perfilEn;
+    /** Cuánto quiere ganar sobre el costo de cada producto, en % (null si no lo ha elegido). */
+    private Integer margen;
 
     protected Usuario() {
     }
@@ -66,6 +68,7 @@ public class Usuario {
     public String getLlaveBreB() { return llaveBreB; }
     public boolean isCompartirCifras() { return compartirCifras; }
     public Instant getPerfilEn() { return perfilEn; }
+    public Integer getMargen() { return margen; }
 
     /**
      * Aplica el perfil que manda el teléfono solo si es más reciente que el guardado: así un
@@ -83,6 +86,7 @@ public class Usuario {
         tipoNegocio = vacioANulo(p.tipoNegocio());
         llaveBreB = vacioANulo(p.llaveBreB());
         compartirCifras = p.compartirCifras();
+        margen = p.margen();
         perfilEn = modificadoEn;
         return true;
     }

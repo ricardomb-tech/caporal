@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../datos/inventario.dart';
+import '../../dominio/formato.dart';
+import '../../dominio/precios.dart';
+import '../../sincronizacion/sesion.dart';
 import '../../dominio/producto.dart';
 import '../comun/formulario_guiado.dart';
 
@@ -20,6 +23,7 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
   static const _no = 'No hace falta';
 
   final _nombre = TextEditingController();
+  final _costo = TextEditingController();
   final _precio = TextEditingController();
   final _cantidad = TextEditingController();
   String? _llevaCuenta;
@@ -39,11 +43,26 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
     final cuenta = _llevaCuenta == _si;
     final Producto p = await inv.crearProducto(
       nombre: _nombre.text.trim(),
-      precio: int.parse(_precio.text.replaceAll('.', '').replaceAll(' ', '').trim()),
+      precio: _entero(_precio.text)!,
+      costo: _entero(_costo.text),
       stockInicial: cuenta ? (widget.conCantidadInicial ? (int.tryParse(_cantidad.text.trim()) ?? 0) : 0) : null,
     );
     navegador.pop(p);
     return null;
+  }
+
+  static int? _entero(String v) => int.tryParse(v.replaceAll('.', '').replaceAll(' ', '').trim());
+
+  /// Lo que dice el paso del precio: el sugerido y cuánto gana con el que va escrito.
+  String _ayudaPrecio(int margen) {
+    final costo = _entero(_costo.text);
+    if (costo == null) return 'El precio de UNA unidad, en pesos. Al vender, la app lo suma por usted.';
+    final precio = _entero(_precio.text);
+    final partes = [
+      'Lo compra a ${pesos(costo)}. Para ganar $margen %, le sugerimos ${pesos(Precios.sugerido(costo, margen))}; ya quedó escrito y puede cambiarlo.',
+      if (precio != null && precio > 0) 'Con ${pesos(precio)}: ${Precios.explicar(precio, costo).toLowerCase()}.',
+    ];
+    return partes.join(' ');
   }
 
   static String? _numero(String v, {required int maximo, required String ejemplo}) {
@@ -68,8 +87,26 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
           },
         ),
         PasoTexto(
+          pregunta: '¿A cuánto lo compra?',
+          ayuda: 'Lo que le paga al proveedor por UNA unidad. Si viene por paca, divida: una paca de 12 a \$ 24.000 '
+              'sale a \$ 2.000 cada una. Si no lo sabe, déjelo vacío.',
+          ejemplo: '2000',
+          etiqueta: 'Costo de una unidad (opcional)',
+          controlador: _costo,
+          teclado: TextInputType.number,
+          opcional: true,
+          validador: (v) => _numero(v, maximo: 99999999, ejemplo: '2000'),
+          alAvanzar: () {
+            final costo = _entero(_costo.text);
+            if (costo != null && costo > 0 && _precio.text.trim().isEmpty) {
+              _precio.text = Precios.sugerido(costo, context.read<Sesion>().margen).toString();
+            }
+          },
+        ),
+        PasoTexto(
           pregunta: '¿A cuánto lo vende?',
           ayuda: 'El precio de UNA unidad, en pesos. Al vender, la app lo suma por usted.',
+          ayudaViva: () => _ayudaPrecio(context.read<Sesion>().margen),
           ejemplo: '3000',
           etiqueta: 'Precio en pesos',
           controlador: _precio,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../dominio/precios.dart';
 import '../../sincronizacion/sesion.dart';
 import '../comun/formulario_guiado.dart';
 import '../cuenta/pantalla_registro.dart';
@@ -18,12 +19,19 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
   late final _municipio = TextEditingController(text: context.read<Sesion>().municipio ?? 'Yopal');
   late final _llave = TextEditingController(text: context.read<Sesion>().llaveBreB ?? '');
   late String? _tipo = context.read<Sesion>().tipoNegocio;
+  late String? _margen = _etiquetaMargen(context.read<Sesion>().margen);
+
+  static String _etiquetaMargen(int m) => m == Precios.margenRecomendado ? '$m % (recomendado)' : '$m %';
 
   Future<String?> _guardar() async {
     final sesion = context.read<Sesion>();
     final navegador = Navigator.of(context);
     await sesion.guardarNegocio(
-        nombre: _nombre.text.trim(), tipo: _tipo, municipioNuevo: _municipio.text.trim(), llave: _llave.text.trim());
+        nombre: _nombre.text.trim(),
+        tipo: _tipo,
+        municipioNuevo: _municipio.text.trim(),
+        llave: _llave.text.trim(),
+        margenNuevo: _margen == null ? null : int.parse(_margen!.split(' ').first));
     navegador.pop();
     return null;
   }
@@ -52,6 +60,14 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
           etiqueta: 'Municipio',
           controlador: _municipio,
           mayusculas: TextCapitalization.words,
+        ),
+        PasoOpciones(
+          pregunta: '¿Cuánto le quiere ganar en cada producto?',
+          ayuda: 'Es lo que le suma a lo que pagó para sacar el precio de venta. Si algo le cuesta \$ 2.000 y elige '
+              '25 %, la app le sugiere venderlo a \$ 2.500: gana \$ 500. En tienda se usa entre 15 % y 30 %.',
+          opciones: [for (final m in Precios.margenes) _etiquetaMargen(m)],
+          valor: () => _margen,
+          alElegir: (m) => _margen = m,
         ),
         PasoTexto(
           pregunta: '¿Cuál es su llave Bre-B?',

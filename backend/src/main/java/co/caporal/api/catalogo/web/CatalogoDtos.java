@@ -27,16 +27,18 @@ public final class CatalogoDtos {
             @NotNull Instant nombreEn,
             @NotNull Instant precioEn,
             @NotNull Instant controlaEn,
-            @NotNull Instant activoEn) {
+            @NotNull Instant activoEn,
+            @Min(0) @Max(99_999_999) Long costo,
+            Instant costoEn) {
 
         public Producto aDominio(UUID usuarioId) {
             return new Producto(id, usuarioId, nombre, precio, controlaStock, activo, nombreEn, precioEn, controlaEn,
-                    activoEn);
+                    activoEn).conCosto(costo, costoEn);
         }
 
         public static ProductoDto de(Producto p) {
             return new ProductoDto(p.getId(), p.getNombre(), p.getPrecio(), p.isControlaStock(), p.isActivo(),
-                    p.getNombreEn(), p.getPrecioEn(), p.getControlaEn(), p.getActivoEn());
+                    p.getNombreEn(), p.getPrecioEn(), p.getControlaEn(), p.getActivoEn(), p.getCosto(), p.getCostoEn());
         }
     }
 

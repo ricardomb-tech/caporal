@@ -5,5 +5,5 @@ package co.caporal.api.cuenta.dominio;
  * se usa en los recordatorios de cobro; el celular (usuario) no hace parte del perfil.
  */
 public record Perfil(String nombreNegocio, String municipio, String nombrePersona, String correo,
-                     String tipoNegocio, String llaveBreB, boolean compartirCifras) {
+                     String tipoNegocio, String llaveBreB, boolean compartirCifras, Integer margen) {
 }

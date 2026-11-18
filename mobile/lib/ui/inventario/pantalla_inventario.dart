@@ -27,7 +27,8 @@ class PantallaInventario extends StatelessWidget {
             if (lista.isNotEmpty) const _ResumenInventario(),
             if (lista.isEmpty)
               const Tarjeta(
-                  hijo: Text('Aún no tiene productos. Agregue los que más vende: así la app le dice cuánto le queda y anota con un toque.',
+                  hijo: Text(
+                      'Aún no tiene productos. Agregue los que más vende: así la app le dice cuánto le queda y anota con un toque.',
                       style: TextStyle(fontSize: 15, color: Colores.gris)))
             else
               Tarjeta(
@@ -70,10 +71,22 @@ class _ResumenInventario extends StatelessWidget {
           color: Colores.verde,
           relleno: const EdgeInsets.all(20),
           hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Lo que tiene guardado', style: TextStyle(color: Colors.white70, fontSize: 15)),
-            Text(pesos(r.valor), style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+            const Text('Lo que tiene guardado, a precio de venta',
+                style: TextStyle(color: Colors.white70, fontSize: 15)),
+            Text(pesos(r.valor),
+                style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
             Text('${r.unidades} unidades en ${r.productos} ${r.productos == 1 ? 'producto' : 'productos'}',
                 style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            if (r.conCosto > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                    r.conCosto == r.productos
+                        ? 'Le costó ${pesos(r.valorCosto)}'
+                        : 'Le costó ${pesos(r.valorCosto)} en ${r.conCosto} de ${r.productos} productos. '
+                            'Anote el costo de los demás para saber cuánto gana.',
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
             if (r.agotados > 0) ...[
               const SizedBox(height: 10),
               Container(

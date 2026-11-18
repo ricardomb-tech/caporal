@@ -9,7 +9,21 @@ abstract class PasoGuiado {
   final String ayuda;
   final String? ejemplo;
   final bool opcional;
-  const PasoGuiado({required this.pregunta, required this.ayuda, this.ejemplo, this.opcional = false});
+
+  /// Se ejecuta al pasar al siguiente paso (por ejemplo, para dejar escrito un valor sugerido).
+  final VoidCallback? alAvanzar;
+
+  /// Ayuda que depende de lo que se va escribiendo (se recalcula en cada cambio). Si es null, se usa [ayuda].
+  final String Function()? ayudaViva;
+  const PasoGuiado(
+      {required this.pregunta,
+      required this.ayuda,
+      this.ejemplo,
+      this.opcional = false,
+      this.alAvanzar,
+      this.ayudaViva});
+
+  String get textoAyuda => ayudaViva?.call() ?? ayuda;
 
   /// Null si se puede seguir; si no, qué corregir, en palabras sencillas.
   String? validar();
@@ -33,6 +47,8 @@ class PasoTexto extends PasoGuiado {
     required this.etiqueta,
     super.ejemplo,
     super.opcional,
+    super.alAvanzar,
+    super.ayudaViva,
     this.teclado,
     this.oculto = false,
     this.mayusculas = TextCapitalization.none,
@@ -75,6 +91,8 @@ class PasoOpciones extends PasoGuiado {
     required this.alElegir,
     super.ejemplo,
     super.opcional,
+    super.alAvanzar,
+    super.ayudaViva,
   });
 
   @override
@@ -110,7 +128,8 @@ class PasoContenido extends PasoGuiado {
   String? validar() => validador();
 
   @override
-  Widget construir(BuildContext context, VoidCallback alCambiar, VoidCallback alSeguir) => contenido(context, alCambiar);
+  Widget construir(BuildContext context, VoidCallback alCambiar, VoidCallback alSeguir) =>
+      contenido(context, alCambiar);
 }
 
 /// Formulario de una pregunta por pantalla: explica qué va en cada campo, da un ejemplo y avanza con "Seguir".
@@ -146,6 +165,7 @@ class _FormularioGuiadoState extends State<FormularioGuiado> {
       setState(() => _error = error);
       return;
     }
+    widget.pasos[_paso].alAvanzar?.call();
     if (!_esUltimo) {
       setState(() {
         _paso++;
@@ -182,7 +202,7 @@ class _FormularioGuiadoState extends State<FormularioGuiado> {
       hijos: [
         _BarraProgreso(actual: _paso, total: total),
         Text(p.pregunta, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colores.texto)),
-        Text(p.ayuda, style: const TextStyle(fontSize: 15, height: 1.35, color: Colores.gris)),
+        Text(p.textoAyuda, style: const TextStyle(fontSize: 15, height: 1.35, color: Colores.gris)),
         if (p.ejemplo != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -193,7 +213,8 @@ class _FormularioGuiadoState extends State<FormularioGuiado> {
           key: ValueKey(_paso),
           child: p.construir(context, () => setState(() => _error = null), _seguir),
         ),
-        if (p.opcional) const Text('Puede dejarlo vacío y seguir.', style: TextStyle(fontSize: 13, color: Colores.gris)),
+        if (p.opcional)
+          const Text('Puede dejarlo vacío y seguir.', style: TextStyle(fontSize: 13, color: Colores.gris)),
         if (_error != null)
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Icon(Icons.info_outline, color: Colores.rojo, size: 18),

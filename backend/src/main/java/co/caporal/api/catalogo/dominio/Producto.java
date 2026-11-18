@@ -36,6 +36,10 @@ public class Producto {
     private Instant activoEn;
     @Column(name = "recibido_en", nullable = false)
     private Instant recibidoEn;
+    /** Lo que le cuesta una unidad al tendero; null si nunca lo ha anotado. */
+    private Long costo;
+    @Column(name = "costo_en")
+    private Instant costoEn;
 
     protected Producto() {
     }
@@ -53,6 +57,15 @@ public class Producto {
         this.precioEn = precioEn;
         this.controlaEn = controlaEn;
         this.activoEn = activoEn;
+    }
+
+    /** El costo es opcional: solo se fija si el teléfono lo envía con su hora de cambio. */
+    public Producto conCosto(Long costo, Instant costoEn) {
+        if (costoEn != null) {
+            this.costo = costo;
+            this.costoEn = costoEn;
+        }
+        return this;
     }
 
     /** Marca la hora en que llegó o cambió en el servidor. */
@@ -86,6 +99,10 @@ public class Producto {
             activo = propuesto.activo;
             activoEn = propuesto.activoEn;
         }
+        if (propuesto.costoEn != null && (costoEn == null || propuesto.costoEn.isAfter(costoEn))) {
+            costo = propuesto.costo;
+            costoEn = propuesto.costoEn;
+        }
         recibir(ahora);
     }
 
@@ -99,4 +116,6 @@ public class Producto {
     public Instant getPrecioEn() { return precioEn; }
     public Instant getControlaEn() { return controlaEn; }
     public Instant getActivoEn() { return activoEn; }
+    public Long getCosto() { return costo; }
+    public Instant getCostoEn() { return costoEn; }
 }

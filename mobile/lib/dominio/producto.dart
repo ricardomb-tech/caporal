@@ -18,6 +18,10 @@ class Producto {
   final int controlaEn;
   final int activoEn;
 
+  /// Lo que le cuesta una unidad al tendero (la última vez que la compró). Null si no lo ha dicho.
+  final int? costo;
+  final int costoEn;
+
   const Producto({
     required this.id,
     required this.nombre,
@@ -29,6 +33,8 @@ class Producto {
     required this.precioEn,
     required this.controlaEn,
     required this.activoEn,
+    this.costo,
+    this.costoEn = 0,
   });
 
   /// Con cuántas unidades se avisa que se está acabando.
@@ -48,6 +54,8 @@ class Producto {
         precioEn: f['precio_en'] as int,
         controlaEn: f['controla_en'] as int,
         activoEn: f['activo_en'] as int,
+        costo: f['costo'] as int?,
+        costoEn: (f['costo_en'] as int?) ?? 0,
       );
 
   static String _iso(int ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true).toIso8601String();
@@ -63,6 +71,9 @@ class Producto {
         'precioEn': _iso(precioEn),
         'controlaEn': _iso(controlaEn),
         'activoEn': _iso(activoEn),
+        // Sin costo o nunca cambiado: el servidor lo deja como está (las versiones anteriores no lo envían).
+        'costo': costoEn == 0 ? null : costo,
+        'costoEn': costoEn == 0 ? null : _iso(costoEn),
       };
 }
 
@@ -70,7 +81,11 @@ class Producto {
 class LineaVenta {
   final Producto producto;
   final int cantidad;
-  const LineaVenta(this.producto, this.cantidad);
+
+  /// Solo en un pedido: cuánto le costó cada una y, si quiso, el nuevo precio de venta.
+  final int? costo;
+  final int? precioNuevo;
+  const LineaVenta(this.producto, this.cantidad, {this.costo, this.precioNuevo});
 }
 
 /// Cambio de cantidad inmutable: + entra mercancía, − sale. Una corrección es otro movimiento.

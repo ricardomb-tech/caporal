@@ -56,12 +56,16 @@ class _DialogoStockState extends State<_DialogoStock> {
       title: Text(widget.producto.nombre),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(
-            widget.producto.controlaStock ? 'Ahora tiene ${widget.producto.stock}' : 'Aún no lleva la cuenta de cantidad',
+            widget.producto.controlaStock
+                ? 'Ahora tiene ${widget.producto.stock}'
+                : 'Aún no lleva la cuenta de cantidad',
             style: const TextStyle(color: Colores.gris, fontSize: 14)),
         const SizedBox(height: 12),
         Wrap(spacing: 8, runSpacing: 8, children: [
-          ChipCaporal('Llegó mercancía', seleccionado: _modo == _Modo.entro, alTocar: () => setState(() => _modo = _Modo.entro)),
-          ChipCaporal('Se perdió', seleccionado: _modo == _Modo.perdi, alTocar: () => setState(() => _modo = _Modo.perdi)),
+          ChipCaporal('Llegó mercancía',
+              seleccionado: _modo == _Modo.entro, alTocar: () => setState(() => _modo = _Modo.entro)),
+          ChipCaporal('Se perdió',
+              seleccionado: _modo == _Modo.perdi, alTocar: () => setState(() => _modo = _Modo.perdi)),
           ChipCaporal('Conté', seleccionado: _modo == _Modo.conte, alTocar: () => setState(() => _modo = _Modo.conte)),
         ]),
         const SizedBox(height: 12),

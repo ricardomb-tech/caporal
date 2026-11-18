@@ -47,7 +47,7 @@ Respuesta (igual en ingreso y renovación):
 ```json
 {"nombreNegocio": "Tienda La Esperanza", "municipio": "Yopal", "nombrePersona": "Marta Pérez",
  "correo": "marta@correo.co", "tipoNegocio": "Tienda", "llaveBreB": "3101234567",
- "compartirCifras": false, "modificadoEn": "2026-11-17T15:00:00Z"}
+ "compartirCifras": false, "margen": 25, "modificadoEn": "2026-11-17T15:00:00Z"}
 ```
 
 `modificadoEn` es `null` si el teléfono nunca ha enviado el perfil.
@@ -85,12 +85,13 @@ Movimientos del negocio recibidos después de `desde` (máximo 500): `{"movimien
 
 ```json
 {"productos": [{"id": "…", "nombre": "Leche", "precio": 3000, "controlaStock": true, "activo": true,
-                "nombreEn": "…", "precioEn": "…", "controlaEn": "…", "activoEn": "…"}],
+                "nombreEn": "…", "precioEn": "…", "controlaEn": "…", "activoEn": "…",
+                "costo": 2400, "costoEn": "…"}],
  "inventario": [{"id": "…", "productoId": "…", "delta": -2, "motivo": "VENTA", "movimientoId": "…",
                  "precioUnitario": 3000, "dispositivoId": "tel-1", "creadoEnDispositivo": "…"}]}
 ```
 
-Hasta 200 productos y 500 cambios. Respuesta: `{"productos": [ids], "inventario": [ids], "horaServidor": "..."}`. Un cambio de 0 unidades no se confirma; un producto de otro negocio no se toca ni se confirma.
+`costo` y `costoEn` son opcionales: sin ellos se conserva el costo guardado. Hasta 200 productos y 500 cambios. Respuesta: `{"productos": [ids], "inventario": [ids], "horaServidor": "..."}`. Un cambio de 0 unidades no se confirma; un producto de otro negocio no se toca ni se confirma.
 
 ### `GET /api/v1/sync/cambios?desde=<ISO>&hasta=<ISO>&pagina=0` → 200
 

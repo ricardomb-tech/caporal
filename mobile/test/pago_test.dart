@@ -83,11 +83,22 @@ void main() {
           await d.execute(
               'CREATE TABLE movimiento (id TEXT PRIMARY KEY, tipo TEXT NOT NULL, valor INTEGER NOT NULL, descripcion TEXT, cliente_nombre TEXT, medio_pago TEXT, dispositivo_id TEXT NOT NULL, creado_en INTEGER NOT NULL, reverso_de TEXT)');
           await d.insert('movimiento', {'id': 'm1', 'tipo': 'abono', 'valor': 5000, 'dispositivo_id': 't', 'creado_en': 1});
+          // En la versión 4 el catálogo ya existía (desde la 3).
+          await d.execute('CREATE TABLE producto (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, precio INTEGER NOT NULL, '
+              'orden INTEGER NOT NULL, controla_stock INTEGER NOT NULL DEFAULT 0, activo INTEGER NOT NULL DEFAULT 1, '
+              'nombre_en INTEGER NOT NULL, precio_en INTEGER NOT NULL, controla_en INTEGER NOT NULL, activo_en INTEGER NOT NULL)');
+          await d.insert('producto', {'id': 'p1', 'nombre': 'Leche', 'precio': 3000, 'orden': 1, 'nombre_en': 1,
+              'precio_en': 1, 'controla_en': 1, 'activo_en': 1});
         }));
     await BaseLocal.actualizar(viejo, 4, BaseLocal.version);
     final filas = await viejo.query('movimiento');
     expect(filas.single['referencia'], isNull);
     expect(await viejo.query('comprobante'), isEmpty);
+    // Y la versión 6 agrega el costo sin tocar los productos que había.
+    final leche = (await viejo.query('producto')).single;
+    expect(leche['nombre'], 'Leche');
+    expect(leche['costo'], isNull);
+    expect(leche['costo_en'], 0);
     await viejo.close();
   });
 }

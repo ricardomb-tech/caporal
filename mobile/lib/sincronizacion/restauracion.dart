@@ -78,6 +78,8 @@ class Restauracion {
       'precio': (p['precio'], _ms(p['precioEn']), 'precio_en'),
       'controla_stock': (p['controlaStock'] == true ? 1 : 0, _ms(p['controlaEn']), 'controla_en'),
       'activo': (p['activo'] == true ? 1 : 0, _ms(p['activoEn']), 'activo_en'),
+      // El costo solo viaja si alguna vez se anotó.
+      if (p['costoEn'] != null) 'costo': (p['costo'], _ms(p['costoEn']), 'costo_en'),
     };
     final actual = await tx.query('producto', where: 'id = ?', whereArgs: [id]);
     if (actual.isEmpty) {

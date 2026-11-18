@@ -67,6 +67,7 @@ class PantallaInicio extends StatelessWidget {
                           style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
                       Text('Vendió ${pesos(x.ventas)}  ·  Gastó ${pesos(x.gastos)}',
                           style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                      const _GananciaProductos(),
                     ]),
                   );
                 },
@@ -255,6 +256,32 @@ class _TarjetaInventario extends StatelessWidget {
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PantallaInventario())),
                 child: const Text('Ver')),
           ]),
+        );
+      },
+    );
+  }
+}
+
+/// Lo que ganó hoy en los productos que tienen costo: precio de venta menos lo que le costaron.
+/// No aparece si nada de lo vendido hoy tiene costo.
+class _GananciaProductos extends StatelessWidget {
+  const _GananciaProductos();
+
+  @override
+  Widget build(BuildContext context) {
+    final inv = context.watch<Inventario>();
+    final hoy = DateTime.now();
+    return FutureBuilder<int?>(
+      future: inv.gananciaDesde(DateTime(hoy.year, hoy.month, hoy.day)),
+      builder: (_, s) {
+        final g = s.data;
+        if (g == null) return const SizedBox.shrink();
+        return Container(
+          margin: const EdgeInsets.only(top: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(color: const Color(0x26FFFFFF), borderRadius: BorderRadius.circular(14)),
+          child: Text('Ganancia en lo vendido: ${pesos(g)}',
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
         );
       },
     );
