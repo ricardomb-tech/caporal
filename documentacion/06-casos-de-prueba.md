@@ -5,8 +5,8 @@ Caporal se prueba en tres niveles:
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
 | Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 51 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 87 |
-| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 16 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 92 |
+| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 18 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
 
@@ -25,6 +25,10 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `elIngresoTieneSuPropioLimiteMasEstricto` | `RateLimitFilterTest` | Límite propio para entrar, sin afectar el resto |
 | `cadaIpTieneSuCubeta` | `RateLimitFilterTest` | Una IP no agota el límite de otra |
 | `guía paso a paso: explica, valida, vuelve atrás y termina` | `formulario_guiado_test.dart` | Formulario guiado: ayuda, ejemplo, validación, Atrás, opcionales |
+| `sin Internet la cuenta queda en el celular y se puede trabajar` | `cuenta_sin_internet_test.dart` | Registro sin señal |
+| `al volver la señal termina de crearla en el servidor y borra la clave guardada` | `cuenta_sin_internet_test.dart` | Completar el registro |
+| `si el celular ya tenía cuenta, pide entrar con la clave sin perder lo anotado` | `cuenta_sin_internet_test.dart` | Conflicto de cuenta |
+| `crear una cuenta nueva o entrar con otro número quita los datos de la anterior` | `cuenta_sin_internet_test.dart` | Nadie ve las cuentas de otro |
 
 ### Sesión (CU-02, CU-16)
 
@@ -198,6 +202,8 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-09 | Comprobante repetido (CU-10) | Registrar otro pago con el mismo número | Aviso con fecha, cliente y valor; no guarda |
 | PM-10 | Corregir (CU-11) | Abrir una venta con productos → Corregir | Abre con el mismo valor y productos; al guardar, aparece el reverso y la venta nueva; el original sigue en el historial |
 | PM-16 | Costo y precio (CU-12) | Mi negocio → 25 %; producto nuevo con costo 2000; pedido con costo 2200 | Sugiere $ 2.500; en el pedido avisa que gana 14 % y ofrece subir a $ 2.800; el inicio muestra "Ganancia en lo vendido" |
+| PM-17 | Cuenta sin Internet (CU-01) | Modo avión → Crear mi cuenta → anotar una venta → quitar modo avión | Funciona sin señal; al volver la señal la cuenta se crea y la venta queda "Enviado" |
+| PM-18 | Otra cuenta (CU-01, CU-02) | Cerrar sesión → crear otra cuenta en el mismo celular | Avisa que hay datos de otra cuenta y los quita; la cuenta nueva empieza vacía |
 | PM-15 | Fiado ya pagado (CU-11) | Fiar → registrar el pago → intentar corregir el fiado | Avisa "Primero corrija el pago" y no deja corregir |
 | PM-11 | Lector de pantalla | Activar VoiceOver (iOS) o TalkBack (Android) y recorrer inicio, Vendí y Le deben | Cada zona tocable se anuncia como botón con nombre; los chips dicen si están elegidos |
 | PM-14 | Huella (CU-03) | Crear PIN → activar Huella o Face ID → cerrar y abrir la app | Pide la huella o la cara y abre sin PIN; si se cancela, deja escribir el PIN |

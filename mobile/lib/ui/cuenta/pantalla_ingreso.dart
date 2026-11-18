@@ -5,6 +5,7 @@ import '../../sincronizacion/sesion.dart';
 import '../comun/campo_caporal.dart';
 import '../comun/logo_caporal.dart';
 import 'pantalla_recuperar.dart';
+import 'preparar_cuenta.dart';
 import 'pantalla_registro.dart';
 import '../comun/tema.dart';
 import '../comun/widgets.dart';
@@ -26,11 +27,16 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
 
   Future<void> _entrar() async {
     final sesion = context.read<Sesion>();
+    final celular = _celular.text.trim();
     setState(() {
       _cargando = true;
       _error = null;
     });
-    final error = await sesion.ingresar(_celular.text.trim(), _clave.text);
+    if (!await prepararCuenta(context, celular, esRegistro: false)) {
+      if (mounted) setState(() => _cargando = false);
+      return;
+    }
+    final error = await sesion.ingresar(celular, _clave.text);
     if (!mounted) return;
     setState(() {
       _cargando = false;

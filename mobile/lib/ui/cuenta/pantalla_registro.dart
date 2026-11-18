@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../sincronizacion/sesion.dart';
+import 'preparar_cuenta.dart';
 import '../comun/formulario_guiado.dart';
 import '../comun/tema.dart';
 import '../comun/widgets.dart';
@@ -34,6 +35,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   Future<String?> _crear() async {
     final sesion = context.read<Sesion>();
     final navegador = Navigator.of(context);
+    final celular = _celular.text.replaceAll(' ', '').trim();
+    if (!await prepararCuenta(context, celular, esRegistro: true)) return 'No se creó la cuenta.';
     final error = await sesion.registrar(
       celular: _celular.text.replaceAll(' ', '').trim(),
       nombreNegocio: _negocio.text.trim(),

@@ -72,6 +72,15 @@ class Sincronizador extends ChangeNotifier {
   Future<void> sincronizar() async {
     pendientes = await repo.cantidadPendiente();
     notifyListeners();
+    // Cuenta creada sin Internet: primero se termina de crear en el servidor.
+    if (!_enCurso && conSenal && sesion.registroPendiente) {
+      _enCurso = true;
+      try {
+        await sesion.completarRegistro();
+      } finally {
+        _enCurso = false;
+      }
+    }
     if (_enCurso || !conSenal || sesion.token == null) return;
     if (sesion.restaurado && pendientes == 0 && !sesion.perfilPendiente && !_tocaPonerseAlDia) return;
     _enCurso = true;

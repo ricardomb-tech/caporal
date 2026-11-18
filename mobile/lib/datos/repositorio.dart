@@ -252,6 +252,12 @@ class Repositorio extends ChangeNotifier {
   }
 
   /// Borra todo lo que hay en el teléfono (derecho de supresión).
+  /// Si en este celular hay algo anotado (movimientos o productos).
+  Future<bool> tieneDatos() async {
+    final r = await db.rawQuery('SELECT (SELECT COUNT(*) FROM movimiento) + (SELECT COUNT(*) FROM producto) AS n');
+    return (r.first['n'] as int) > 0;
+  }
+
   Future<void> borrarTodo() async {
     await db.transaction((tx) async {
       await tx.delete('cola');

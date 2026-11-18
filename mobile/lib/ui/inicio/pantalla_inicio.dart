@@ -39,7 +39,10 @@ class PantallaInicio extends StatelessWidget {
           subtitulo: vacio ? 'Su negocio empieza hoy' : 'Hola, bienvenido',
           atras: false,
           hijos: [
-            _EstadoSenal(sync, necesitaEntrar: sesion.necesitaEntrar),
+            _EstadoSenal(sync,
+                necesitaEntrar: sesion.necesitaEntrar,
+                registroPendiente: sesion.registroPendiente,
+                errorRegistro: sesion.errorRegistro),
             if (vacio) ...[
               const SizedBox(height: 24),
               Column(children: [
@@ -138,12 +141,24 @@ class PantallaInicio extends StatelessWidget {
 class _EstadoSenal extends StatelessWidget {
   final Sincronizador sync;
   final bool necesitaEntrar;
-  const _EstadoSenal(this.sync, {required this.necesitaEntrar});
+  final bool registroPendiente;
+  final String? errorRegistro;
+  const _EstadoSenal(this.sync, {required this.necesitaEntrar, required this.registroPendiente, this.errorRegistro});
 
   @override
   Widget build(BuildContext context) {
     final String texto;
     final Color fondo, color;
+    if (registroPendiente) {
+      return const Align(
+        alignment: Alignment.centerLeft,
+        child: _Pildora(
+          texto: 'Su cuenta se termina de crear cuando tenga Internet · todo queda guardado',
+          fondo: Colores.ambarClaro,
+          color: Colores.ambarTexto,
+        ),
+      );
+    }
     if (necesitaEntrar && sync.conSenal) {
       return Align(
         alignment: Alignment.centerLeft,
@@ -153,7 +168,7 @@ class _EstadoSenal extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(color: Colores.rojoClaro, borderRadius: BorderRadius.circular(16)),
-            child: const Text('Entre de nuevo para guardar su copia de seguridad',
+            child: Text(errorRegistro ?? 'Entre de nuevo para guardar su copia de seguridad',
                 style: TextStyle(color: Colores.rojo, fontSize: 13, fontWeight: FontWeight.w600)),
           ),
         )),
@@ -286,4 +301,18 @@ class _GananciaProductos extends StatelessWidget {
       },
     );
   }
+}
+
+class _Pildora extends StatelessWidget {
+  final String texto;
+  final Color fondo;
+  final Color color;
+  const _Pildora({required this.texto, required this.fondo, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(16)),
+        child: Text(texto, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600)),
+      );
 }

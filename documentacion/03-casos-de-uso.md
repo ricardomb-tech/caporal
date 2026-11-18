@@ -37,7 +37,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 ## CU-01 Crear cuenta
 
-- **Actor:** dueño del negocio. **Precondición:** tiene Internet y no tiene cuenta con ese celular.
+- **Actor:** dueño del negocio. **Precondición:** no tiene cuenta con ese celular. No necesita Internet.
 - **Flujo principal** (formulario guiado, una pregunta por pantalla con botón "Seguir"):
   1. Escribe su nombre, celular (10 números, empieza por 3) y, si quiere, su correo.
   2. Escribe el nombre del negocio, elige el tipo y el municipio.
@@ -45,7 +45,9 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
   4. Lee qué se guarda y para qué, y marca que autoriza el tratamiento de sus datos (Ley 1581).
   5. Pulsa "Crear mi cuenta": el servidor crea la cuenta y abre la sesión.
 - **Alternativas:** el correo y el permiso de compartir cifras anónimas son opcionales.
-- **Excepciones:** celular ya registrado → "Ese celular ya está registrado"; sin Internet → aviso de que crear la cuenta necesita conexión; dato inválido → la app explica qué corregir y no avanza.
+- **Sin Internet:** la cuenta queda creada en el celular y se puede trabajar de una vez; el inicio dice "Su cuenta se termina de crear cuando tenga Internet". Al volver la señal, la app la crea en el servidor y envía todo lo anotado. La clave espera cifrada en el almacén seguro del sistema solo hasta ese envío.
+- **Otra cuenta en el celular:** si el celular tiene datos de otra cuenta, avisa y los quita antes de crear la nueva (si hay anotaciones sin enviar, lo advierte en rojo), para que no se mezclen ni se vean.
+- **Excepciones:** celular ya registrado → con Internet, "Ese celular ya está registrado"; si se creó sin Internet, al volver la señal pide entrar con la clave y lo anotado pasa a esa cuenta. Dato inválido → la app explica qué corregir y no avanza.
 - **Reglas:** la clave se guarda con Argon2id; la autorización queda con fecha (`acepta_datos_en`).
 - **Resultado:** cuenta creada, sesión abierta, pantalla de inicio.
 - **Código:** App `ui/cuenta/pantalla_registro.dart`, `sincronizacion/sesion.dart`. API `cuenta/aplicacion/RegistrarNegocio`.
@@ -54,6 +56,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 - **Actor:** dueño. **Precondición:** tiene cuenta y señal.
 - **Flujo principal:** escribe celular y clave → la API valida → la app guarda los tokens en el almacén seguro del sistema → si el teléfono no tiene los datos de la cuenta, ejecuta CU-08 → muestra el inicio.
+- **Otro número en el mismo celular:** igual que al crear la cuenta, los datos de la cuenta anterior se quitan del celular (siguen en el servidor) antes de cargar los del número que entra.
 - **Excepciones:** datos errados → "Celular o clave incorrectos" (igual mensaje si el celular no existe, para no revelar cuentas); 5 intentos fallidos → la cuenta se bloquea 15 minutos; olvidó la clave → la app indica escribir a soporte desde Ayuda.
 - **Reglas:** el acceso dura 15 minutos y se renueva solo; el token de renovación es de un solo uso y dura hasta un año desde la última conexión.
 - **Código:** App `ui/cuenta/pantalla_ingreso.dart`, `sincronizacion/sesion.dart`. API `cuenta/aplicacion/IngresarNegocio`, `Sesiones`.

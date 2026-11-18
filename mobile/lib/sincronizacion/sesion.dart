@@ -13,6 +13,10 @@ import 'renovador_sesion.dart';
 /// Sesión del negocio y datos del perfil. Todo vive en el almacén seguro del sistema
 /// (Keystore en Android, Keychain en iOS).
 class Sesion extends ChangeNotifier {
+  /// Cliente HTTP (en las pruebas se reemplaza por uno de mentira).
+  final http.Client _http;
+  Sesion({http.Client? cliente}) : _http = cliente ?? http.Client();
+
   static const _almacen = FlutterSecureStorage();
   static const _claveToken = 'caporal_token';
   static const _claveRenovacion = 'caporal_renovacion';
@@ -21,6 +25,7 @@ class Sesion extends ChangeNotifier {
   static const _clavePin = 'caporal_pin';
   static const _claveBienvenida = 'caporal_bienvenida';
   static const _claveHuella = 'caporal_huella';
+  static const _claveRegistroPendiente = 'caporal_registro_pendiente';
   static const _claveRestaurado = 'caporal_restaurado';
   static const _clavePerfilEn = 'caporal_perfil_en';
   static const _claveCambiosHasta = 'caporal_cambios_hasta';
@@ -64,7 +69,13 @@ class Sesion extends ChangeNotifier {
   bool get activa => nombreNegocio != null;
 
   /// El negocio sigue trabajando, pero sin sesión en el servidor no se guarda la copia de seguridad.
-  bool get necesitaEntrar => activa && token == null;
+  bool get necesitaEntrar => activa && token == null && !registroPendiente;
+
+  /// Cuenta creada sin Internet: existe en el celular y se termina de crear en el servidor al volver la señal.
+  bool registroPendiente = false;
+
+  /// Por qué no se pudo terminar de crear la cuenta en el servidor (por ejemplo, el celular ya tenía cuenta).
+  String? errorRegistro;
   bool get tienePin => _tienePin;
 
   Future<void> cargar() async {
@@ -73,6 +84,7 @@ class Sesion extends ChangeNotifier {
     nombreNegocio = await _almacen.read(key: _claveNegocio);
     bienvenidaVista = await _almacen.read(key: _claveBienvenida) == '1';
     restaurado = await _almacen.read(key: _claveRestaurado) == '1';
+    registroPendiente = await _almacen.read(key: _claveRegistroPendiente) != null;
     cambiosHasta = await _almacen.read(key: _claveCambiosHasta);
     final en = await _almacen.read(key: _clavePerfilEn);
     perfilEn = en == null ? null : DateTime.tryParse(en);
@@ -197,7 +209,9 @@ class Sesion extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Devuelve null si salió bien, o el mensaje de error para mostrar.
+  /// Crea la cuenta. Con Internet, en el servidor de una vez; sin Internet, en el celular, y se termina de
+  /// crear en el servidor cuando vuelva la señal ([completarRegistro]). Devuelve null si salió bien,
+  /// o el mensaje de error para mostrar.
   Future<String?> registrar({
     required String celular,
     required String nombreNegocio,
@@ -209,15 +223,29 @@ class Sesion extends ChangeNotifier {
     String? tipoNegocio,
     bool compartirCifras = false,
   }) async {
-    final error = await _enviar('/api/v1/auth/registro', {
+    final datos = {
       'celular': celular,
       'nombreNegocio': nombreNegocio,
       'municipio': municipio,
       'clave': clave,
       'aceptaDatos': aceptaDatos,
-    });
-    if (error != null) return error;
-    await marcarRestaurado();
+    };
+    final (estado, cuerpo) = await _post('/api/v1/auth/registro', datos);
+    if (estado == null) {
+      // Sin Internet: la cuenta queda en el celular. La clave espera en el almacén seguro del sistema
+      // (Keychain/Keystore) solo hasta que se envíe; después se borra.
+      await _almacen.write(key: _claveRegistroPendiente, value: jsonEncode(datos));
+      registroPendiente = true;
+      this.nombreNegocio = nombreNegocio;
+      await _almacen.write(key: _claveNegocio, value: nombreNegocio);
+      desbloqueada = true;
+    } else if (estado == 200 || estado == 201) {
+      await _guardarTokens(cuerpo);
+    } else {
+      return _mensaje(cuerpo, 'No pudimos crear la cuenta. Revise los datos e intente de nuevo.');
+    }
+    errorRegistro = null;
+    await marcarRestaurado(); // cuenta nueva: no hay nada que traer del servidor
     this.celular = celular;
     this.municipio = municipio;
     this.nombrePersona = nombrePersona;
@@ -228,6 +256,32 @@ class Sesion extends ChangeNotifier {
     await _perfilCambiado(); // nombre, correo y tipo de negocio viajan en el primer envío
     notifyListeners();
     return null;
+  }
+
+  /// Termina en el servidor una cuenta creada sin Internet. False si no hay señal (se intenta después).
+  Future<bool> completarRegistro() async {
+    final guardado = await _almacen.read(key: _claveRegistroPendiente);
+    if (guardado == null) {
+      registroPendiente = false;
+      return true;
+    }
+    final (estado, cuerpo) = await _post('/api/v1/auth/registro', jsonDecode(guardado) as Map<String, dynamic>);
+    if (estado == null) return false;
+    // Pase lo que pase con la respuesta, la clave ya no se guarda más.
+    await _almacen.delete(key: _claveRegistroPendiente);
+    registroPendiente = false;
+    if (estado == 200 || estado == 201) {
+      await _guardarTokens(cuerpo);
+      errorRegistro = null;
+    } else if (estado == 409) {
+      errorRegistro =
+          'Ese celular ya tenía una cuenta en Caporal. Entre con su clave y lo que anotó se guardará en esa cuenta.';
+    } else {
+      errorRegistro =
+          _mensaje(cuerpo, 'No pudimos terminar de crear su cuenta. Entre de nuevo con su celular y su clave.');
+    }
+    notifyListeners();
+    return true;
   }
 
   Future<void> marcarRestaurado() async {
@@ -242,38 +296,51 @@ class Sesion extends ChangeNotifier {
   }
 
   Future<String?> ingresar(String celular, String clave) async {
-    final error = await _enviar('/api/v1/auth/login', {'celular': celular, 'clave': clave});
-    if (error == null) {
-      this.celular = celular;
-      await _guardarPerfil();
-      notifyListeners();
-    }
-    return error;
+    final (estado, cuerpo) = await _post('/api/v1/auth/login', {'celular': celular, 'clave': clave});
+    if (estado == null) return 'No hay conexión. Para entrar con una cuenta que ya existe necesita Internet.';
+    if (estado != 200) return _mensaje(cuerpo, 'No pudimos entrar. Revise los datos e intente de nuevo.');
+    await _guardarTokens(cuerpo);
+    errorRegistro = null;
+    this.celular = celular;
+    await _guardarPerfil();
+    notifyListeners();
+    return null;
   }
 
-  Future<String?> _enviar(String ruta, Map<String, Object?> cuerpo) async {
+  /// POST sin sesión. Estado null si no hay Internet o se agotó el tiempo.
+  Future<(int?, Map<String, dynamic>)> _post(String ruta, Map<String, Object?> cuerpo) async {
+    final http.Response r;
     try {
-      final r = await http
+      r = await _http
           .post(Uri.parse('$apiUrl$ruta'), headers: {'Content-Type': 'application/json'}, body: jsonEncode(cuerpo))
           .timeout(const Duration(seconds: 15));
-      final datos = r.body.isEmpty ? <String, dynamic>{} : jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
-      if (r.statusCode == 200 || r.statusCode == 201) {
-        token = datos['token'] as String;
-        nombreNegocio = datos['nombreNegocio'] as String;
-        await _almacen.write(key: _claveToken, value: token);
-        _tokenRenovacion = datos['tokenRenovacion'] as String?;
-        await _almacen.write(key: _claveRenovacion, value: _tokenRenovacion);
-        await _almacen.write(key: _claveNegocio, value: nombreNegocio);
-        desbloqueada = true;
-        notifyListeners();
-        return null;
-      }
-      return (datos['detail'] ?? datos['message'] ?? 'No pudimos entrar. Revise los datos e intente de nuevo.')
-          as String;
     } catch (_) {
-      return 'No hay conexión. Para crear la cuenta o entrar por primera vez necesita Internet.';
+      return (null, <String, dynamic>{}); // sin Internet o sin respuesta
+    }
+    // Una respuesta que no se puede leer no es "sin Internet": se informa con el mensaje por defecto.
+    try {
+      final datos = r.body.isEmpty ? <String, dynamic>{} : jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
+      return (r.statusCode, datos);
+    } catch (_) {
+      return (r.statusCode, <String, dynamic>{});
     }
   }
+
+  static String _mensaje(Map<String, dynamic> cuerpo, String porDefecto) =>
+      (cuerpo['detail'] ?? cuerpo['message'] ?? porDefecto) as String;
+
+  Future<void> _guardarTokens(Map<String, dynamic> datos) async {
+    token = datos['token'] as String;
+    nombreNegocio = datos['nombreNegocio'] as String;
+    await _almacen.write(key: _claveToken, value: token);
+    _tokenRenovacion = datos['tokenRenovacion'] as String?;
+    await _almacen.write(key: _claveRenovacion, value: _tokenRenovacion);
+    await _almacen.write(key: _claveNegocio, value: nombreNegocio);
+    desbloqueada = true;
+  }
+
+  /// Si [celular] es de una cuenta distinta a la que dejó sus datos en este celular.
+  bool esOtraCuenta(String celular) => this.celular != null && this.celular != celular;
 
   // ---- PIN: candado de comodidad para que otra persona no abra las cuentas ----
 
@@ -327,7 +394,7 @@ class Sesion extends ChangeNotifier {
   Future<String?> borrarEnServidor() async {
     if (token == null) return 'Para borrar también la copia en el servidor, entre de nuevo con su celular y su clave.';
     try {
-      final r = await http.delete(Uri.parse('$apiUrl/api/v1/cuenta'),
+      final r = await _http.delete(Uri.parse('$apiUrl/api/v1/cuenta'),
           headers: {'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 20));
       if (r.statusCode == 204 || r.statusCode == 200) return null;
       if (r.statusCode == 401) {
@@ -381,6 +448,9 @@ class Sesion extends ChangeNotifier {
   }
 
   Future<void> cerrar() async {
+    await _almacen.delete(key: _claveRegistroPendiente);
+    registroPendiente = false;
+    errorRegistro = null;
     final r = _tokenRenovacion;
     if (r != null) await _renovador.salir(r);
     _tokenRenovacion = null;
@@ -408,7 +478,9 @@ class Sesion extends ChangeNotifier {
     await _almacen.delete(key: _clavePin);
     nombrePersona = correo = celular = tipoNegocio = municipio = llaveBreB = null;
     compartirCifras = false;
+    margen = Precios.margenRecomendado;
     _tienePin = false;
+    await cambiarHuella(false);
     await cerrar();
   }
 }
