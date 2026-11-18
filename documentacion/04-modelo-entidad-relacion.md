@@ -67,6 +67,8 @@ erDiagram
         timestamptz activo_en
         bigint costo "lo que le cuesta una unidad (opcional)"
         timestamptz costo_en
+        varchar categoria "Bebidas, Aseo, ... (opcional)"
+        timestamptz categoria_en
         timestamptz recibido_en
     }
     MOV_INVENTARIO {
@@ -102,7 +104,7 @@ erDiagram
 | `mov_inventario` | Cambios de cantidad | Inmutable; `delta ≠ 0`; cantidad = suma de `delta` por producto |
 | `sesion` | Tokens de renovación | Solo la huella SHA-256; un solo uso; reutilizar uno revocado revoca todas las sesiones del negocio |
 
-Migraciones: `backend/src/main/resources/db/migration/V1__esquema_inicial.sql` (usuario, movimiento), `V2__catalogo_e_inventario.sql`, `V3__sesiones_y_hash.sql`, `V4__comprobante_de_pago.sql`, `V5__perfil_del_negocio.sql`, `V6__costo_y_margen.sql`.
+Migraciones: `backend/src/main/resources/db/migration/V1__esquema_inicial.sql` (usuario, movimiento), `V2__catalogo_e_inventario.sql`, `V3__sesiones_y_hash.sql`, `V4__comprobante_de_pago.sql`, `V5__perfil_del_negocio.sql`, `V6__costo_y_margen.sql`, `V7__categoria_de_producto.sql`.
 
 ## Teléfono (SQLite + SQLCipher, versión 5)
 
@@ -141,6 +143,8 @@ erDiagram
         int activo_en
         int costo
         int costo_en
+        text categoria
+        int categoria_en
     }
     MOV_INVENTARIO {
         text id PK
@@ -184,4 +188,4 @@ erDiagram
 
 Fuera de la base, en el almacén seguro del sistema (Keychain en iOS, Keystore en Android): llave de cifrado de la base, token de acceso, token de renovación, PIN (con sal y hash) y perfil (con la hora de su último cambio y si falta enviarlo; el PIN nunca sale del teléfono).
 
-Migraciones locales: `mobile/lib/datos/base_local.dart` (`version = 6`, de v2 a v6 sin pérdida de datos; probadas en `test/inventario_test.dart` y `test/pago_test.dart`).
+Migraciones locales: `mobile/lib/datos/base_local.dart` (`version = 7`, de v2 a v7 sin pérdida de datos; probadas en `test/inventario_test.dart` y `test/pago_test.dart`).

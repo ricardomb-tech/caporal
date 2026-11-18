@@ -96,7 +96,8 @@ class Inventario extends ChangeNotifier {
   // ---- Catálogo ----
 
   /// [stockInicial] null = no lleva la cuenta de cuántos tiene; un número = sí la lleva, empezando ahí.
-  Future<Producto> crearProducto({required String nombre, required int precio, int? stockInicial, int? costo}) async {
+  Future<Producto> crearProducto(
+      {required String nombre, required int precio, int? stockInicial, int? costo, String? categoria}) async {
     final id = const Uuid().v4();
     final t = _ahora();
     await db.transaction((tx) async {
@@ -114,6 +115,8 @@ class Inventario extends ChangeNotifier {
         'activo_en': t,
         if (costo != null) 'costo': costo,
         if (costo != null) 'costo_en': t,
+        if (categoria != null) 'categoria': categoria,
+        if (categoria != null) 'categoria_en': t,
       });
       await cola.encolar(tx, TipoCola.producto, id);
       if (stockInicial != null && stockInicial > 0) {
@@ -125,7 +128,8 @@ class Inventario extends ChangeNotifier {
   }
 
   /// Solo cambia (y solo marca como nuevos) los campos que de verdad son distintos.
-  Future<void> editarProducto(String id, {String? nombre, int? precio, bool? controlaStock, int? costo}) async {
+  Future<void> editarProducto(String id,
+      {String? nombre, int? precio, bool? controlaStock, int? costo, String? categoria}) async {
     await db.transaction((tx) async {
       final filas = await tx.query('producto', where: 'id = ?', whereArgs: [id]);
       if (filas.isEmpty) return;
@@ -143,6 +147,9 @@ class Inventario extends ChangeNotifier {
       }
       if (costo != null && costo != actual['costo']) {
         cambios.addAll({'costo': costo, 'costo_en': t});
+      }
+      if (categoria != null && categoria != actual['categoria']) {
+        cambios.addAll({'categoria': categoria, 'categoria_en': t});
       }
       if (cambios.isEmpty) return;
       await tx.update('producto', cambios, where: 'id = ?', whereArgs: [id]);

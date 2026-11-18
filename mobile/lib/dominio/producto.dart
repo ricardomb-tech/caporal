@@ -22,6 +22,10 @@ class Producto {
   final int? costo;
   final int costoEn;
 
+  /// Categoría para encontrarlo rápido (ver Categorias). Null si no tiene.
+  final String? categoria;
+  final int categoriaEn;
+
   const Producto({
     required this.id,
     required this.nombre,
@@ -35,6 +39,8 @@ class Producto {
     required this.activoEn,
     this.costo,
     this.costoEn = 0,
+    this.categoria,
+    this.categoriaEn = 0,
   });
 
   /// Con cuántas unidades se avisa que se está acabando.
@@ -56,6 +62,8 @@ class Producto {
         activoEn: f['activo_en'] as int,
         costo: f['costo'] as int?,
         costoEn: (f['costo_en'] as int?) ?? 0,
+        categoria: f['categoria'] as String?,
+        categoriaEn: (f['categoria_en'] as int?) ?? 0,
       );
 
   static String _iso(int ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true).toIso8601String();
@@ -74,6 +82,8 @@ class Producto {
         // Sin costo o nunca cambiado: el servidor lo deja como está (las versiones anteriores no lo envían).
         'costo': costoEn == 0 ? null : costo,
         'costoEn': costoEn == 0 ? null : _iso(costoEn),
+        'categoria': categoriaEn == 0 ? null : categoria,
+        'categoriaEn': categoriaEn == 0 ? null : _iso(categoriaEn),
       };
 }
 

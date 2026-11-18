@@ -80,4 +80,14 @@ class CostoTest {
         mvc.perform(get("/api/v1/cuenta/perfil").header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.margen").value(25));
     }
+
+    @Test
+    void laCategoriaSeGuardaYUnEnvioSinCategoriaNoLaBorra() throws Exception {
+        String token = registrar("3109000005");
+        UUID id = UUID.randomUUID();
+        producto(token, id, ",\"categoria\":\"Bebidas\",\"categoriaEn\":\"2026-11-18T10:00:00Z\"").andExpect(status().isOk());
+        producto(token, id, "").andExpect(status().isOk());
+        mvc.perform(get("/api/v1/sync/cambios").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.productos[0].categoria").value("Bebidas"));
+    }
 }

@@ -28,6 +28,10 @@ void main() {
     await t.enterText(find.byType(TextField), 'Gaseosa 400 ml');
     await t.tap(find.text('Seguir'));
     await t.pumpAndSettle();
+    expect(find.text('¿De qué tipo es?'), findsOneWidget);
+    await t.tap(find.text('Bebidas'));
+    await t.tap(find.text('Seguir'));
+    await t.pumpAndSettle();
     expect(find.text('¿A cuánto lo compra?'), findsOneWidget);
 
     await t.enterText(find.byType(TextField), '2000');

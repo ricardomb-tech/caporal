@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../datos/inventario.dart';
+import '../../dominio/categorias.dart';
 import '../../dominio/formato.dart';
 import '../../dominio/precios.dart';
 import '../../dominio/producto.dart';
@@ -36,6 +37,7 @@ class _DialogoProductoState extends State<_DialogoProducto> {
   late final _costo = TextEditingController(text: widget.producto?.costo?.toString() ?? '');
   final _cantidad = TextEditingController();
   late bool _llevaCuenta = widget.producto?.controlaStock ?? true;
+  late String? _categoria = widget.producto?.categoria;
   bool _guardando = false;
   String? _error;
 
@@ -80,10 +82,11 @@ class _DialogoProductoState extends State<_DialogoProducto> {
     final Producto resultado;
     if (_nuevo) {
       final cantidad = _llevaCuenta ? (int.tryParse(_cantidad.text.trim()) ?? 0) : null;
-      resultado = await inv.crearProducto(nombre: nombre, precio: precio, stockInicial: cantidad, costo: costo);
+      resultado = await inv.crearProducto(
+          nombre: nombre, precio: precio, stockInicial: cantidad, costo: costo, categoria: _categoria);
     } else {
       await inv.editarProducto(widget.producto!.id,
-          nombre: nombre, precio: precio, controlaStock: _llevaCuenta, costo: costo);
+          nombre: nombre, precio: precio, controlaStock: _llevaCuenta, costo: costo, categoria: _categoria);
       resultado = (await inv.producto(widget.producto!.id))!;
     }
     if (mounted) Navigator.pop(context, resultado);
@@ -104,6 +107,14 @@ class _DialogoProductoState extends State<_DialogoProducto> {
               controller: _nombre,
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(labelText: 'Nombre')),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            initialValue: _categoria,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Categoría'),
+            items: [for (final c in Categorias.todas) DropdownMenuItem(value: c, child: Text(c))],
+            onChanged: (c) => setState(() => _categoria = c),
+          ),
           const SizedBox(height: 10),
           TextField(
               controller: _costo,

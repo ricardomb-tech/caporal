@@ -80,6 +80,7 @@ class Restauracion {
       'activo': (p['activo'] == true ? 1 : 0, _ms(p['activoEn']), 'activo_en'),
       // El costo solo viaja si alguna vez se anotó.
       if (p['costoEn'] != null) 'costo': (p['costo'], _ms(p['costoEn']), 'costo_en'),
+      if (p['categoriaEn'] != null) 'categoria': (p['categoria'], _ms(p['categoriaEn']), 'categoria_en'),
     };
     final actual = await tx.query('producto', where: 'id = ?', whereArgs: [id]);
     if (actual.isEmpty) {

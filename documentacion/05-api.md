@@ -86,12 +86,12 @@ Movimientos del negocio recibidos después de `desde` (máximo 500): `{"movimien
 ```json
 {"productos": [{"id": "…", "nombre": "Leche", "precio": 3000, "controlaStock": true, "activo": true,
                 "nombreEn": "…", "precioEn": "…", "controlaEn": "…", "activoEn": "…",
-                "costo": 2400, "costoEn": "…"}],
+                "costo": 2400, "costoEn": "…", "categoria": "Lácteos y huevos", "categoriaEn": "…"}],
  "inventario": [{"id": "…", "productoId": "…", "delta": -2, "motivo": "VENTA", "movimientoId": "…",
                  "precioUnitario": 3000, "dispositivoId": "tel-1", "creadoEnDispositivo": "…"}]}
 ```
 
-`costo` y `costoEn` son opcionales: sin ellos se conserva el costo guardado. Hasta 200 productos y 500 cambios. Respuesta: `{"productos": [ids], "inventario": [ids], "horaServidor": "..."}`. Un cambio de 0 unidades no se confirma; un producto de otro negocio no se toca ni se confirma.
+`costo`, `costoEn`, `categoria` y `categoriaEn` son opcionales: sin ellos se conserva lo guardado. Hasta 200 productos y 500 cambios. Respuesta: `{"productos": [ids], "inventario": [ids], "horaServidor": "..."}`. Un cambio de 0 unidades no se confirma; un producto de otro negocio no se toca ni se confirma.
 
 ### `GET /api/v1/sync/cambios?desde=<ISO>&hasta=<ISO>&pagina=0` → 200
 

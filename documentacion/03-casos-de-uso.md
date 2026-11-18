@@ -74,7 +74,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 - **Actor:** dueño. **Precondición:** sesión abierta (no necesita señal).
 - **Flujo principal:**
   1. Toca "Vendí".
-  2. Toca los productos que lleva el cliente: cada toque suma uno y el total se calcula solo; con − y + ajusta cantidades. O escribe el valor en el teclado.
+  2. Toca los productos que lleva el cliente: cada toque suma uno y el total se calcula solo; con − y + ajusta cantidades. Para encontrarlos rápido usa el **buscador** (no importan tildes ni mayúsculas: "cafe" encuentra "Café") o toca una **categoría**. O escribe el valor en el teclado.
   3. Elige cómo le pagaron (Efectivo o Bre-B) y pulsa "Guardar".
 - **Alternativas:** el producto no existe → "+ Nuevo" (formulario guiado: nombre, precio, si se cuenta, cantidad actual) y queda agregado a la venta.
 - **Reglas:** la venta, el descuento de inventario y la entrada en la cola se guardan en una sola transacción: o queda todo o nada. Los productos sin control de cantidad no generan movimientos de inventario.
@@ -139,7 +139,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 ## CU-12 Llevar el inventario
 
-- **Actor:** dueño. **Flujos:** crear producto (formulario guiado); editar nombre o precio; anotar que llegó mercancía; contar lo que hay (se anota solo la diferencia); quitar un producto (se oculta y conserva su historial).
+- **Actor:** dueño. **Flujos:** crear producto (formulario guiado, con categoría opcional de una lista fija: Bebidas, Aseo, …); editar nombre, precio, costo o categoría; anotar que llegó mercancía; contar lo que hay (se anota solo la diferencia); quitar un producto (se oculta y conserva su historial).
 - **Costo y precio:** al crear un producto pregunta a cuánto lo compra (opcional) y deja escrito el precio sugerido para ganar el margen del negocio (15–30 %, elegido en Mi negocio), redondeado a un valor de tienda y hacia arriba. Al editar muestra "Gana $ X por cada una (Y %)" mientras escribe. El inventario muestra cuánto costó lo guardado y el inicio "Ganancia en lo vendido" del día (precio de venta menos costo, descontando ventas corregidas, con el costo de la última compra).
 - **Reglas:** la cantidad es la suma de los movimientos de inventario; avisa "Quedan N" con 5 o menos y "Agotado" en 0. El costo es opcional: sin él todo funciona como antes.
 - **Código:** `ui/inventario/`, `datos/inventario.dart`.

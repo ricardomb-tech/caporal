@@ -40,6 +40,10 @@ public class Producto {
     private Long costo;
     @Column(name = "costo_en")
     private Instant costoEn;
+    /** Categoría para encontrarlo rápido (Bebidas, Aseo, ...); null si no tiene. */
+    private String categoria;
+    @Column(name = "categoria_en")
+    private Instant categoriaEn;
 
     protected Producto() {
     }
@@ -64,6 +68,15 @@ public class Producto {
         if (costoEn != null) {
             this.costo = costo;
             this.costoEn = costoEn;
+        }
+        return this;
+    }
+
+    /** La categoría es opcional: solo se fija si el teléfono la envía con su hora de cambio. */
+    public Producto conCategoria(String categoria, Instant categoriaEn) {
+        if (categoriaEn != null) {
+            this.categoria = categoria;
+            this.categoriaEn = categoriaEn;
         }
         return this;
     }
@@ -103,6 +116,10 @@ public class Producto {
             costo = propuesto.costo;
             costoEn = propuesto.costoEn;
         }
+        if (propuesto.categoriaEn != null && (categoriaEn == null || propuesto.categoriaEn.isAfter(categoriaEn))) {
+            categoria = propuesto.categoria;
+            categoriaEn = propuesto.categoriaEn;
+        }
         recibir(ahora);
     }
 
@@ -118,4 +135,6 @@ public class Producto {
     public Instant getActivoEn() { return activoEn; }
     public Long getCosto() { return costo; }
     public Instant getCostoEn() { return costoEn; }
+    public String getCategoria() { return categoria; }
+    public Instant getCategoriaEn() { return categoriaEn; }
 }

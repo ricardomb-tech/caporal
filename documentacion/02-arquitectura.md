@@ -63,7 +63,7 @@ backend/src/main/java/co/caporal/api/
     └── web/                ManejadorErrores
 ```
 
-Migraciones de base de datos: `backend/src/main/resources/db/migration/` (Flyway, V1 a V4).
+Migraciones de base de datos: `backend/src/main/resources/db/migration/` (Flyway, V1 a V7).
 
 ## App
 

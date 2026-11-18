@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../datos/inventario.dart';
+import '../../dominio/categorias.dart';
 import '../../dominio/formato.dart';
 import '../../dominio/precios.dart';
 import '../../sincronizacion/sesion.dart';
@@ -27,6 +28,7 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
   final _precio = TextEditingController();
   final _cantidad = TextEditingController();
   String? _llevaCuenta;
+  String? _categoria;
   Set<String> _existentes = {};
 
   @override
@@ -45,6 +47,7 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
       nombre: _nombre.text.trim(),
       precio: _entero(_precio.text)!,
       costo: _entero(_costo.text),
+      categoria: _categoria,
       stockInicial: cuenta ? (widget.conCantidadInicial ? (int.tryParse(_cantidad.text.trim()) ?? 0) : 0) : null,
     );
     navegador.pop(p);
@@ -85,6 +88,14 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
             if (_existentes.contains(v.toLowerCase())) return 'Ya tiene un producto con ese nombre.';
             return null;
           },
+        ),
+        PasoOpciones(
+          pregunta: '¿De qué tipo es?',
+          ayuda: 'Así lo encuentra rápido al vender, tocando la categoría. Si no sabe, deje este paso sin elegir.',
+          opciones: Categorias.todas,
+          valor: () => _categoria,
+          alElegir: (c) => setState(() => _categoria = c),
+          opcional: true,
         ),
         PasoTexto(
           pregunta: '¿A cuánto lo compra?',

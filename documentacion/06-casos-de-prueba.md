@@ -4,9 +4,9 @@ Caporal se prueba en tres niveles:
 
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
-| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 51 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 92 |
-| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 18 |
+| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 52 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 94 |
+| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 19 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
 
@@ -63,6 +63,8 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `si algo falla a mitad de la venta no queda nada guardado` | `inventario_test.dart` | Todo o nada |
 | `vender un producto sin control de cantidad no crea movimientos de inventario` | `inventario_test.dart` | Productos sin cuenta |
 | `muestra cada producto con su cantidad, subtotal y el total` | `lista_venta_test.dart` | Lista de la venta con varios productos |
+| `busca sin importar tildes ni mayúsculas, por nombre o categoría` | `buscar_productos_test.dart` | Búsqueda |
+| `al vender, el buscador y las categorías filtran los productos` | `buscar_productos_test.dart` | Buscador y categorías en pantalla |
 | `un gasto de pedido suma lo que llegó y queda como gasto` | `pedido_test.dart` | Pedido suma inventario |
 | `si llega pedido de un producto sin cuenta, empieza a llevarla` | `pedido_test.dart` | Activa el conteo |
 | `vender después del pedido descuenta sobre lo que llegó` | `pedido_test.dart` | Secuencia pedido → venta |
@@ -166,7 +168,7 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `al restaurar, el costo más reciente gana y uno sin costo no borra el que hay` | `costo_test.dart` | Sincronización del costo |
 | `con el costo escrito, sugiere el precio para ganar lo elegido y lo deja escrito` | `nuevo_producto_costo_test.dart` | Producto nuevo |
 | `al llegar mercancía más cara, avisa que gana menos y ofrece subir el precio` | `pedido_costo_test.dart` | Pedido |
-| `unaAppAnteriorSinCostoNoBorraElCostoGuardado` / `elCostoMasRecienteGana` / `elMargenDelNegocioSeGuardaEnElPerfil` | `CostoTest` | Servidor |
+| `unaAppAnteriorSinCostoNoBorraElCostoGuardado` / `elCostoMasRecienteGana` / `elMargenDelNegocioSeGuardaEnElPerfil` / `laCategoriaSeGuardaYUnEnvioSinCategoriaNoLaBorra` | `CostoTest` | Servidor |
 
 ### CU-15: borrar mis datos
 
@@ -204,6 +206,7 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-16 | Costo y precio (CU-12) | Mi negocio → 25 %; producto nuevo con costo 2000; pedido con costo 2200 | Sugiere $ 2.500; en el pedido avisa que gana 14 % y ofrece subir a $ 2.800; el inicio muestra "Ganancia en lo vendido" |
 | PM-17 | Cuenta sin Internet (CU-01) | Modo avión → Crear mi cuenta → anotar una venta → quitar modo avión | Funciona sin señal; al volver la señal la cuenta se crea y la venta queda "Enviado" |
 | PM-18 | Otra cuenta (CU-01, CU-02) | Cerrar sesión → crear otra cuenta en el mismo celular | Avisa que hay datos de otra cuenta y los quita; la cuenta nueva empieza vacía |
+| PM-19 | Buscar al vender (CU-04) | Crear productos con categoría → Vendí → escribir "cafe" y tocar una categoría | Filtra al escribir, sin importar tildes; la categoría muestra solo sus productos |
 | PM-15 | Fiado ya pagado (CU-11) | Fiar → registrar el pago → intentar corregir el fiado | Avisa "Primero corrija el pago" y no deja corregir |
 | PM-11 | Lector de pantalla | Activar VoiceOver (iOS) o TalkBack (Android) y recorrer inicio, Vendí y Le deben | Cada zona tocable se anuncia como botón con nombre; los chips dicen si están elegidos |
 | PM-14 | Huella (CU-03) | Crear PIN → activar Huella o Face ID → cerrar y abrir la app | Pide la huella o la cara y abre sin PIN; si se cancela, deja escribir el PIN |
