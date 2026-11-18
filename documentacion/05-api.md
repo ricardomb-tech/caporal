@@ -92,7 +92,15 @@ Movimientos del negocio recibidos después de `desde` (máximo 500): `{"movimien
 
 Hasta 200 productos y 500 cambios. Respuesta: `{"productos": [ids], "inventario": [ids], "horaServidor": "..."}`. Un cambio de 0 unidades no se confirma; un producto de otro negocio no se toca ni se confirma.
 
-### `GET /api/v1/sync/respaldo?pagina=0` → 200
+### `GET /api/v1/sync/cambios?desde=<ISO>&hasta=<ISO>&pagina=0` → 200
+
+Lo que el negocio guardó o cambió en la ventana (`desde`, `hasta`]: `{"productos": [...], "movimientos": [...], "inventario": [...], "hasta": "...", "hayMas": false}`.
+
+- Sin `desde`: todo desde el principio (restaurar un celular).
+- La página 0 va sin `hasta`: el servidor lo fija unos segundos antes de ahora y lo devuelve. Las páginas siguientes repiten ese `hasta`.
+- El celular guarda el `hasta` final y lo usa como `desde` la próxima vez.
+
+### `GET /api/v1/sync/respaldo?pagina=0` → 200 (versión anterior de la app)
 
 Respaldo completo del negocio para restaurar un teléfono: `{"productos": [...], "movimientos": [...], "inventario": [...], "hayMas": true}`. Los productos van completos en la página 0; movimientos e inventario de a 500, en orden de llegada. Mientras `hayMas` sea `true`, se pide la página siguiente.
 

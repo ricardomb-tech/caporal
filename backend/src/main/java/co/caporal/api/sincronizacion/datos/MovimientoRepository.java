@@ -25,5 +25,9 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, UUID> {
     /** Una página de los movimientos del negocio, en orden de llegada (para restaurar un teléfono). */
     List<Movimiento> findByUsuarioId(UUID usuarioId, Pageable pagina);
 
+    /** Lo que llegó en la ventana (desde, hasta], por páginas: para que otro celular se ponga al día. */
+    List<Movimiento> findByUsuarioIdAndRecibidoEnGreaterThanAndRecibidoEnLessThanEqual(UUID usuarioId, Instant desde,
+                                                                                       Instant hasta, Pageable pagina);
+
     List<Movimiento> findTop500ByUsuarioIdAndRecibidoEnAfterOrderByRecibidoEnAsc(UUID usuarioId, Instant desde);
 }

@@ -13,6 +13,8 @@ spring:
   flyway:
     enabled: true
 caporal:
+  sync:
+    segundos-margen: 0
   jwt:
     secret: secreto-solo-para-pruebas-con-mas-de-32-caracteres
     minutos-vigencia: 15

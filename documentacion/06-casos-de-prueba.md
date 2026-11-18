@@ -4,9 +4,9 @@ Caporal se prueba en tres niveles:
 
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
-| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 41 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 63 |
-| Manual en celular | Demo, modo avión, reinstalación, lector de pantalla | Pasos de abajo | 12 |
+| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 44 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 65 |
+| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 13 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
 
@@ -86,6 +86,10 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `conserva lo anotado en el teléfono y aplica solo los cambios más recientes` | `restauracion_test.dart` | Fusión con datos locales |
 | `pide las páginas siguientes mientras haya más` | `restauracion_test.dart` | Paginación |
 | `si la sesión venció lo informa y no guarda nada` | `restauracion_test.dart` | Error sin efectos |
+| `elSegundoCelularRecibeLoQueAnotaElPrimeroYSoloLoNuevo` | `DosCelularesTest` | Dos celulares: ventas y productos nuevos, sin repetir |
+| `otroNegocioNoRecibeNada` / `sinSesionNoHayCambios` | `DosCelularesTest` | Aislamiento y acceso |
+| `otro celular de la cuenta: pide desde la última hora y solo agrega lo nuevo` | `restauracion_test.dart` | Ponerse al día en la app |
+| `sin novedades conserva la hora anterior` | `restauracion_test.dart` | No perder la marca de tiempo |
 | `guardaElPerfilYLoEntregaParaRestaurar` | `PerfilTest` | Perfil y llave Bre-B en el servidor |
 | `unCambioMasViejoNoPisaUnoMasReciente` | `PerfilTest` | Gana el cambio más reciente |
 | `unaCuentaNuevaTieneElPerfilDelRegistroSinFechaDeCambio` | `PerfilTest` | Perfil inicial |
@@ -165,6 +169,7 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-09 | Comprobante repetido (CU-10) | Registrar otro pago con el mismo número | Aviso con fecha, cliente y valor; no guarda |
 | PM-10 | Corregir (CU-11) | Abrir una venta → Corregir | Aparece el reverso; el inventario vuelve; el original sigue en el historial |
 | PM-11 | Lector de pantalla | Activar VoiceOver (iOS) o TalkBack (Android) y recorrer inicio, Vendí y Le deben | Cada zona tocable se anuncia como botón con nombre; los chips dicen si están elegidos |
+| PM-13 | Dos celulares (CU-08) | Entrar con la misma cuenta en dos celulares; vender en uno | En menos de dos minutos, la venta aparece en el otro |
 | PM-12 | Borrar datos (CU-15) | Privacidad → Eliminar mis datos → escribir ELIMINAR | Cierra la sesión; al entrar de nuevo con ese celular: "Celular o clave incorrectos" |
 
 ### Registro de ejecución

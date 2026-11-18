@@ -31,6 +31,13 @@ class Sincronizador extends ChangeNotifier {
 
   /// Mientras trae del servidor los datos de la cuenta (teléfono nuevo o app reinstalada).
   bool restaurando = false;
+
+  /// Cada cuánto se consulta lo que anotaron otros celulares de la misma cuenta.
+  static const cadaCuantoPonerseAlDia = Duration(minutes: 1);
+  DateTime? _ultimaPuestaAlDia;
+
+  bool get _tocaPonerseAlDia =>
+      _ultimaPuestaAlDia == null || DateTime.now().difference(_ultimaPuestaAlDia!) >= cadaCuantoPonerseAlDia;
   bool huboError = false;
   DateTime? ultimaVez;
 
@@ -48,8 +55,8 @@ class Sincronizador extends ChangeNotifier {
       _actualizarSenal(r);
       if (conSenal) sincronizar();
     });
-    // Respaldo por si el sistema no avisa el cambio de red.
-    _reloj = Timer.periodic(const Duration(minutes: 2), (_) => sincronizar());
+    // Cada minuto: respaldo por si el sistema no avisa el cambio de red, y traer lo de otros celulares.
+    _reloj = Timer.periodic(const Duration(minutes: 1), (_) => sincronizar());
     repo.addListener(sincronizar);
     inventario.addListener(sincronizar);
     // Al entrar con la cuenta se trae el respaldo enseguida, sin esperar otra anotación.
@@ -66,7 +73,7 @@ class Sincronizador extends ChangeNotifier {
     pendientes = await repo.cantidadPendiente();
     notifyListeners();
     if (_enCurso || !conSenal || sesion.token == null) return;
-    if (sesion.restaurado && pendientes == 0 && !sesion.perfilPendiente) return;
+    if (sesion.restaurado && pendientes == 0 && !sesion.perfilPendiente && !_tocaPonerseAlDia) return;
     _enCurso = true;
     try {
       // Primero se trae lo que hay en el servidor: así un teléfono nuevo o reinstalado recupera todo.
@@ -76,6 +83,8 @@ class Sincronizador extends ChangeNotifier {
       for (final envio in _envios) {
         if (!await _vaciar(envio)) break;
       }
+      // Después de enviar, se trae lo que anotaron los otros celulares de la cuenta.
+      if (_tocaPonerseAlDia) await _ponerseAlDia();
     } finally {
       _enCurso = false;
       pendientes = await repo.cantidadPendiente();
@@ -92,23 +101,42 @@ class Sincronizador extends ChangeNotifier {
         huboError = conSenal;
         return false;
       }
-      var resultado = await _restauracion.ejecutar(sesion.token!);
-      if (resultado == ResultadoRestauracion.sesionVencida && await sesion.renovar()) {
-        resultado = await _restauracion.ejecutar(sesion.token!);
-      }
-      if (resultado != ResultadoRestauracion.restaurado) {
+      final r = await _traerCambios(desde: null);
+      if (r.resultado != ResultadoRestauracion.restaurado) {
         huboError = conSenal;
         return false;
       }
       await sesion.marcarRestaurado();
-      ultimaVez = DateTime.now();
-      repo.avisarCambio();
-      inventario.avisarCambio();
       return true;
     } finally {
       restaurando = false;
       notifyListeners();
     }
+  }
+
+  /// Trae los cambios de la cuenta desde [desde] (null: todo), guarda hasta dónde quedó y avisa a las pantallas.
+  Future<PuestaAlDia> _traerCambios({required String? desde}) async {
+    var r = await _restauracion.ejecutar(sesion.token!, desde: desde);
+    if (r.resultado == ResultadoRestauracion.sesionVencida && await sesion.renovar()) {
+      r = await _restauracion.ejecutar(sesion.token!, desde: desde);
+    }
+    if (r.resultado == ResultadoRestauracion.restaurado) {
+      await sesion.guardarCambiosHasta(r.hasta);
+      _ultimaPuestaAlDia = DateTime.now();
+      ultimaVez = DateTime.now();
+      if (r.recibidos > 0) {
+        repo.avisarCambio();
+        inventario.avisarCambio();
+      }
+    }
+    return r;
+  }
+
+  /// Lo nuevo de otros celulares (y su perfil, por si cambiaron la llave Bre-B). Un error no frena nada:
+  /// se intenta de nuevo en la siguiente vuelta.
+  Future<void> _ponerseAlDia() async {
+    await _traerCambios(desde: sesion.cambiosHasta);
+    if (!sesion.perfilPendiente) await _conRenovacion(_perfil.traer);
   }
 
   /// Ejecuta un paso; si el acceso venció lo renueva y lo intenta una vez más. False si hay que parar.

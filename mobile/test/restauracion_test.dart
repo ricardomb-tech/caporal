@@ -74,12 +74,16 @@ void main() {
       _mov('m2', 'FIADO', 20000, cliente: 'José'),
     ],
     'inventario': [_inv('i1', 'p1', 10, 'INICIAL'), _inv('i2', 'p1', -2, 'VENTA')],
+    'hasta': '2026-11-17T15:00:00Z',
     'hayMas': false,
   };
 
   test('un teléfono vacío recupera ventas, fiados, productos y cantidades', () async {
     final api = _ApiFalsa([RespuestaApi(200, pagina)]);
-    expect(await Restauracion(db, api).ejecutar('t'), ResultadoRestauracion.restaurado);
+    final r = await Restauracion(db, api).ejecutar('t');
+    expect(r.resultado, ResultadoRestauracion.restaurado);
+    expect(r.hasta, '2026-11-17T15:00:00Z');
+    expect(r.recibidos, 5);
 
     expect((await repo.desde(null)).map((m) => m.id).toSet(), {'m1', 'm2'});
     expect((await repo.deudores()).single.nombre, 'José');
@@ -102,16 +106,19 @@ void main() {
     final local = await repo.registrar(tipo: TipoMovimiento.gasto, valor: 5000, descripcion: 'Arriendo');
     await Restauracion(db, _ApiFalsa([RespuestaApi(200, pagina)])).ejecutar('t');
     // Un cambio de precio posterior en el servidor gana; uno anterior no.
-    await Restauracion(db, _ApiFalsa([
-      RespuestaApi(200, {
-        'productos': [
-          {..._producto('p1', 'Leche vieja', 3500, '2026-11-17T13:00:00Z'), 'precioEn': '2026-11-17T16:00:00Z'}
-        ],
-        'movimientos': [],
-        'inventario': [],
-        'hayMas': false,
-      })
-    ])).ejecutar('t');
+    await Restauracion(
+        db,
+        _ApiFalsa([
+          RespuestaApi(200, {
+            'productos': [
+              {..._producto('p1', 'Leche vieja', 3500, '2026-11-17T13:00:00Z'), 'precioEn': '2026-11-17T16:00:00Z'}
+            ],
+            'movimientos': [],
+            'inventario': [],
+            'hasta': '2026-11-17T16:00:00Z',
+            'hayMas': false,
+          })
+        ])).ejecutar('t');
     final leche = (await inventario.productos()).single;
     expect(leche.precio, 3500);
     expect(leche.nombre, 'Leche');
@@ -122,16 +129,53 @@ void main() {
   test('pide las páginas siguientes mientras haya más', () async {
     final api = _ApiFalsa([
       RespuestaApi(200, {...pagina, 'hayMas': true}),
-      RespuestaApi(200, {'productos': [], 'movimientos': [_mov('m3', 'GASTO', 1000)], 'inventario': [], 'hayMas': false}),
+      RespuestaApi(200, {
+        'productos': [],
+        'movimientos': [_mov('m3', 'GASTO', 1000)],
+        'inventario': [],
+        'hasta': '2026-11-17T15:00:00Z',
+        'hayMas': false
+      }),
     ]);
     await Restauracion(db, api).ejecutar('t');
-    expect(api.pedidas, ['/api/v1/sync/respaldo?pagina=0', '/api/v1/sync/respaldo?pagina=1']);
+    // La página 0 fija la ventana; las siguientes repiten su "hasta" para no saltar ni repetir.
+    expect(api.pedidas.first, '/api/v1/sync/cambios?pagina=0');
+    expect(api.pedidas.last, contains('pagina=1'));
+    expect(api.pedidas.last, contains('hasta=2026-11-17T15%3A00%3A00Z'));
     expect((await repo.desde(null)).length, 3);
   });
 
   test('si la sesión venció lo informa y no guarda nada', () async {
     final r = await Restauracion(db, _ApiFalsa([const RespuestaApi(401, {})])).ejecutar('t');
-    expect(r, ResultadoRestauracion.sesionVencida);
+    expect(r.resultado, ResultadoRestauracion.sesionVencida);
     expect(await repo.desde(null), isEmpty);
+  });
+
+  test('otro celular de la cuenta: pide desde la última hora y solo agrega lo nuevo', () async {
+    await Restauracion(db, _ApiFalsa([RespuestaApi(200, pagina)])).ejecutar('t');
+    final api = _ApiFalsa([
+      RespuestaApi(200, {
+        'productos': [],
+        'movimientos': [_mov('m9', 'VENTA', 4000)],
+        'inventario': [_inv('i9', 'p1', -1, 'VENTA')],
+        'hasta': '2026-11-17T15:01:00Z',
+        'hayMas': false,
+      })
+    ]);
+    final r = await Restauracion(db, api).ejecutar('t', desde: '2026-11-17T15:00:00Z');
+    expect(api.pedidas.single, contains('desde=2026-11-17T15%3A00%3A00Z'));
+    expect(r.hasta, '2026-11-17T15:01:00Z');
+    expect((await repo.desde(null)).length, 3);
+    expect((await inventario.productos()).single.stock, 7);
+    expect(await repo.cantidadPendiente(), 0);
+  });
+
+  test('sin novedades conserva la hora anterior', () async {
+    final api = _ApiFalsa([
+      const RespuestaApi(200, {'productos': [], 'movimientos': [], 'inventario': [], 'hasta': null, 'hayMas': false})
+    ]);
+    final r = await Restauracion(db, api).ejecutar('t', desde: '2026-11-17T15:00:00Z');
+    expect(r.hasta, '2026-11-17T15:00:00Z');
+    expect(r.recibidos, 0);
   });
 }

@@ -114,4 +114,5 @@ sequenceDiagram
 - **Movimientos inmutables:** una corrección es un movimiento de reverso; no hay conflictos de edición.
 - **Productos:** cada campo guarda cuándo cambió y gana el cambio más reciente.
 - **Sesión:** acceso de 15 minutos que la app renueva sola; el token de renovación es de un solo uso y reutilizarlo cierra todas las sesiones.
-- **Restauración:** al entrar en un teléfono que no tiene los datos de la cuenta, la app pide el respaldo por páginas y lo guarda sin volver a encolarlo.
+- **Restauración y varios celulares:** al entrar en un teléfono vacío, la app pide todos los cambios de la cuenta (`/sync/cambios` sin `desde`). Después, cada minuto, pide solo lo que llegó desde la última vez: así dos celulares del mismo negocio ven lo que anota el otro. Lo traído se guarda sin volver a encolarlo y sin duplicar.
+- **Ventana segura:** el servidor entrega los cambios hasta unos segundos antes de ahora; lo que se está guardando en ese instante llega en la consulta siguiente, nunca se salta.

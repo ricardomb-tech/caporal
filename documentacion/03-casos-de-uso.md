@@ -13,7 +13,7 @@ flowchart LR
         CU05["CU-05 Registrar gasto o pedido"]
         CU06["CU-06 Registrar fiado"]
         CU07["CU-07 Trabajar sin señal"]
-        CU08["CU-08 Restaurar en otro teléfono"]
+        CU08["CU-08 Restaurar y usar varios celulares"]
         CU09["CU-09 Cobrar por WhatsApp"]
         CU10["CU-10 Registrar pago de un fiado"]
         CU11["CU-11 Corregir un movimiento"]
@@ -98,13 +98,14 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 - **Reglas:** reenviar no duplica (ids únicos generados en el teléfono); un error en el servidor deja todo en la cola para reintentar.
 - **Código:** `sincronizacion/sincronizador.dart`, `envio_catalogo.dart`, `envio_movimientos.dart`. API `sincronizacion/aplicacion/RecibirMovimientos`, `catalogo/aplicacion/SincronizarCatalogo`.
 
-## CU-08 Restaurar en otro teléfono
+## CU-08 Restaurar y usar varios celulares
 
 - **Actor:** dueño y servidor. **Precondición:** la app fue reinstalada o es otro celular; hay señal.
 - **Flujo principal:** al entrar (CU-02), la app trae el perfil del negocio (nombre, tipo, municipio, llave Bre-B, datos de quien atiende) y pide el respaldo por páginas de 500 → guarda productos, movimientos e inventario sin volver a encolarlos → muestra "Trayendo sus datos guardados…" mientras tanto → al terminar, el inicio muestra todo.
 - **Excepciones:** sin señal o error → lo intenta en la siguiente sincronización; acceso vencido → renueva y reintenta.
+- **Varios celulares:** con la misma cuenta abierta en dos celulares, cada uno trae cada minuto (con señal) lo que anotó el otro, y también el perfil si lo cambiaron.
 - **Reglas:** restaurar dos veces no duplica; lo anotado en el teléfono se conserva; en productos gana el cambio más reciente. Lo que nunca llegó al servidor (anotado sin señal y con la app borrada antes de enviarlo) no se puede recuperar.
-- **Código:** App `sincronizacion/restauracion.dart`. API `respaldo/aplicacion/RestaurarRespaldo`.
+- **Código:** App `sincronizacion/restauracion.dart`, `sincronizacion/sincronizador.dart`. API `respaldo/aplicacion/EntregarCambios`.
 
 ## CU-09 Cobrar por WhatsApp
 

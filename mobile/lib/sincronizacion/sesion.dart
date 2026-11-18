@@ -21,6 +21,7 @@ class Sesion extends ChangeNotifier {
   static const _claveBienvenida = 'caporal_bienvenida';
   static const _claveRestaurado = 'caporal_restaurado';
   static const _clavePerfilEn = 'caporal_perfil_en';
+  static const _claveCambiosHasta = 'caporal_cambios_hasta';
   static const _clavePerfilPendiente = 'caporal_perfil_pendiente';
 
   String? token;
@@ -43,6 +44,9 @@ class Sesion extends ChangeNotifier {
   /// Si este teléfono ya trajo del servidor los datos de la cuenta (se hace una vez por cuenta).
   bool restaurado = false;
 
+  /// Hasta qué hora del servidor este celular ya tiene los cambios de la cuenta.
+  String? cambiosHasta;
+
   /// Cuándo se cambió el perfil en este teléfono y si falta enviarlo al servidor.
   DateTime? perfilEn;
   bool perfilPendiente = false;
@@ -61,6 +65,7 @@ class Sesion extends ChangeNotifier {
     nombreNegocio = await _almacen.read(key: _claveNegocio);
     bienvenidaVista = await _almacen.read(key: _claveBienvenida) == '1';
     restaurado = await _almacen.read(key: _claveRestaurado) == '1';
+    cambiosHasta = await _almacen.read(key: _claveCambiosHasta);
     final en = await _almacen.read(key: _clavePerfilEn);
     perfilEn = en == null ? null : DateTime.tryParse(en);
     perfilPendiente = await _almacen.read(key: _clavePerfilPendiente) == '1';
@@ -216,6 +221,12 @@ class Sesion extends ChangeNotifier {
     await _almacen.write(key: _claveRestaurado, value: '1');
   }
 
+  Future<void> guardarCambiosHasta(String? hasta) async {
+    if (hasta == null) return;
+    cambiosHasta = hasta;
+    await _almacen.write(key: _claveCambiosHasta, value: hasta);
+  }
+
   Future<String?> ingresar(String celular, String clave) async {
     final error = await _enviar('/api/v1/auth/login', {'celular': celular, 'clave': clave});
     if (error == null) {
@@ -351,6 +362,8 @@ class Sesion extends ChangeNotifier {
     // Al entrar de nuevo (quizá con otra cuenta) se vuelve a traer el respaldo.
     restaurado = false;
     await _almacen.delete(key: _claveRestaurado);
+    cambiosHasta = null;
+    await _almacen.delete(key: _claveCambiosHasta);
     perfilPendiente = false;
     await _almacen.delete(key: _clavePerfilPendiente);
     notifyListeners();

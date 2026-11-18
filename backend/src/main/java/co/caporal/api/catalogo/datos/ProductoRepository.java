@@ -2,8 +2,10 @@ package co.caporal.api.catalogo.datos;
 
 import co.caporal.api.catalogo.dominio.Producto;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +13,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProductoRepository extends JpaRepository<Producto, UUID> {
     List<Producto> findByUsuarioIdOrderByIdAsc(UUID usuarioId);
+
+    /** Productos creados o cambiados en la ventana (desde, hasta]. */
+    List<Producto> findByUsuarioIdAndRecibidoEnGreaterThanAndRecibidoEnLessThanEqual(UUID usuarioId, Instant desde,
+                                                                                     Instant hasta, Pageable pagina);
 
     @Modifying
     @Query("delete from Producto p where p.usuarioId = :usuarioId")
