@@ -1,6 +1,6 @@
 # 5. API
 
-Base: `https://caporal.2.25.187.25.sslip.io` (pruebas) o `http://localhost:8080` (local). Todo es JSON en UTF-8. La documentación interactiva (Swagger) solo está activa en local: `/swagger-ui.html`.
+Base: `https://<dominio-de-la-api>` (servidor desplegado) o `http://localhost:8080` (local). Todo es JSON en UTF-8. La documentación interactiva (Swagger) solo está activa en local: `/swagger-ui.html`.
 
 **Autenticación:** cabecera `Authorization: Bearer <token>`. El token dura 15 minutos; se renueva con `/api/v1/auth/renovar`. El negocio se identifica siempre por el token, nunca por un dato del cuerpo.
 

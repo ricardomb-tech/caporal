@@ -25,7 +25,9 @@ crontab - <<'CRON'
 CRON
 ```
 
-Y agregue `caddy-caporal.caddy` al Caddyfile del proxy y recárguelo (`caddy validate` antes de `caddy reload`).
+Y agregue `caddy-caporal.caddy` al Caddyfile del proxy, con la variable `CAPORAL_DOMINIO` definida en el proxy, y recárguelo (`caddy validate` antes de `caddy reload`).
+
+> **No publique datos del servidor.** La dirección del VPS, los usuarios y las claves no van en el repositorio (es público): van en `deploy/vps/.env` del servidor o en variables de su computador, por ejemplo `export CAPORAL_SERVIDOR=despliegue@<servidor>`.
 
 Claves del `.env`: `POSTGRES_PASSWORD` y `JWT_SECRET` con `openssl rand -base64 48`; `RESPALDO_CLAVE_PUBLICA`
 (línea "public key" de `age-keygen`), `DOMINIO_PUBLICO` y, si quiere alertas, `ALERTA_WEBHOOK`.
@@ -33,7 +35,7 @@ Claves del `.env`: `POSTGRES_PASSWORD` y `JWT_SECRET` con `openssl rand -base64 
 ## Actualizar
 
 ```bash
-ssh despliegue@2.25.187.25 /opt/caporal/deploy/vps/desplegar.sh
+ssh despliegue@<servidor> /opt/caporal/deploy/vps/desplegar.sh
 ```
 
 ## Respaldos
@@ -41,7 +43,7 @@ ssh despliegue@2.25.187.25 /opt/caporal/deploy/vps/desplegar.sh
 - Diarios a las 3:15 UTC, cifrados con `age` en `/var/backups/caporal` (14 días, permisos 600).
 - La **llave privada** está fuera del servidor (en el computador del responsable, `~/.caporal/llave-respaldos.txt`)
   y debe guardarse también en un gestor de contraseñas. Sin ella los respaldos no se pueden abrir.
-- Copia fuera del VPS: `deploy/vps/bajar-respaldos.sh` (en el computador del responsable, semanal).
+- Copia fuera del VPS: `deploy/vps/bajar-respaldos.sh usuario@servidor` o con `CAPORAL_SERVIDOR` definida (en el computador del responsable, semanal).
 - Prueba de restauración (mensual): `deploy/vps/probar-restauracion.sh`. Carga el último respaldo en una base
   temporal, cuenta tablas y registros, y la borra.
 
@@ -49,7 +51,7 @@ Restaurar de verdad (solo ante un incidente):
 
 ```bash
 age -d -i ~/.caporal/llave-respaldos.txt caporal-AAAA-MM-DD.sql.gz.age | gunzip \
-  | ssh despliegue@2.25.187.25 'docker exec -i caporal-db-1 psql -U caporal caporal'
+  | ssh despliegue@<servidor> 'docker exec -i caporal-db-1 psql -U caporal caporal'
 ```
 
 ## Vigilancia

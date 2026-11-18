@@ -4,7 +4,7 @@
 # y registros, y borra la base temporal. El contenido viaja solo por SSH y no queda en disco.
 set -euo pipefail
 llave="${LLAVE_RESPALDOS:-$HOME/.caporal/llave-respaldos.txt}"
-servidor="${1:-despliegue@2.25.187.25}"
+servidor="${1:-${CAPORAL_SERVIDOR:?Indique el servidor: $0 usuario@servidor, o defina CAPORAL_SERVIDOR}}"
 archivo=$(ls -t "$HOME/Respaldos/caporal"/caporal-*.sql.gz.age | head -1)
 echo "Probando: $(basename "$archivo")"
 age -d -i "$llave" "$archivo" | gunzip | ssh "$servidor" '

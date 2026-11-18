@@ -59,7 +59,7 @@ networks:
   interna: {}
   proxy:
     external: true
-    name: ${RED_PROXY:-domiz-pruebas_default}
+    name: "${RED_PROXY:?Defina RED_PROXY en .env con la red del proxy que pone el HTTPS}"
 
 volumes:
   caporal_db:

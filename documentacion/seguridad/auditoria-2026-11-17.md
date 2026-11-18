@@ -1,6 +1,6 @@
 # Auditoría de seguridad — Caporal
 
-- **Fecha:** 17 de noviembre de 2026 · **Commit:** `2bab68f` · **Entorno:** API pública `https://caporal.2.25.187.25.sslip.io` (VPS de pruebas) y repositorio.
+- **Fecha:** 17 de noviembre de 2026 · **Commit:** `2bab68f` · **Entorno:** API pública `<API de pruebas>` (VPS de pruebas) y repositorio.
 - **Método:** guía "27 controles de seguridad" (fase 1: auditar sin modificar) y referencia a ISO/IEC 27001:2022 (Anexo A) y SOC 2 (Trust Services Criteria). Cada estado se basa en una prueba ejecutada o en el código citado; lo que no se probó dice **NO VERIFICADO**.
 - **Alcance:** API Spring Boot, app Flutter, despliegue Docker y VPS. Es una revisión técnica, **no una certificación**: ISO 27001 y SOC 2 exigen además gestión de riesgos, políticas, evidencias en el tiempo y auditoría externa (ver §4).
 
@@ -64,7 +64,7 @@ Bien resuelto y verificado en la infraestructura: SSH solo con llave (`passworda
 | Gestión de incidentes | A.5.24 – A.5.28 | CC7.4, CC7.5 | Falta: procedimiento escrito y contactos. |
 | Privacidad y datos personales (Ley 1581) | A.5.34, A.8.10, A.8.11 | C1.1, C1.2, P-series | Bien: autorización en el registro, minimización, número de clientes solo en el teléfono con consentimiento, borrado de cuenta y exportación. |
 | Integridad del procesamiento | A.8.28 | PI1.x | Bien: movimientos inmutables, sincronización idempotente probada, transacciones atómicas en el teléfono. |
-| Proveedores y nube | A.5.19 – A.5.23 | CC9.2 | Falta: inventario de proveedores (VPS, sslip.io/Let's Encrypt, Apple, GitHub) y su evaluación. |
+| Proveedores y nube | A.5.19 – A.5.23 | CC9.2 | Falta: inventario de proveedores (VPS, servicio de DNS/Let's Encrypt, Apple, GitHub) y su evaluación. |
 | Gobierno (cláusulas 4–10 de ISO; CC1–CC5 de SOC 2) | Contexto, política, riesgos, SoA, auditoría interna | CC1 – CC5 | Falta: procesos de la organización (ver §4). |
 
 ## 4. Plan de hardening propuesto (pendiente de aprobación)
@@ -98,7 +98,7 @@ Cambios pequeños, separados y cada uno con su prueba.
 
 ## 6. Re-auditoría tras el endurecimiento (17/11/2026, 3:00 p. m.)
 
-Aplicado el plan del §4 (aprobado por el responsable). Cada fila se volvió a probar en vivo contra `https://caporal.2.25.187.25.sslip.io` o con pruebas automáticas.
+Aplicado el plan del §4 (aprobado por el responsable). Cada fila se volvió a probar en vivo contra `<API de pruebas>` o con pruebas automáticas.
 
 | # | Control | Antes | Ahora | Evidencia nueva |
 |---|---|---|---|---|
@@ -121,7 +121,7 @@ Aplicado el plan del §4 (aprobado por el responsable). Cada fila se volvió a p
 3. **Dueño:** elegir destino de alertas (`ALERTA_WEBHOOK`, por ejemplo un tema privado de ntfy.sh).
 4. **Ventana de mantenimiento:** actualizar Docker y reiniciar el VPS (el sistema lo pide); afecta también al otro proyecto del servidor.
 5. Copia de la llave privada de respaldos en el gestor de contraseñas.
-6. Dominio propio en lugar de `sslip.io`.
+6. Dominio propio en lugar del nombre provisional del servidor de pruebas.
 
 ### Documentos de gobierno (borradores)
 `politica-seguridad.md`, `matriz-riesgos.md`, `declaracion-aplicabilidad.md`, `procedimiento-incidentes.md`, `inventario-activos-proveedores.md`, `politica-respaldos-continuidad.md`.

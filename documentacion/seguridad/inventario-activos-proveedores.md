@@ -15,8 +15,8 @@
 ## Proveedores
 | Proveedor | Uso | Datos que trata | Evaluación |
 |---|---|---|---|
-| Proveedor del VPS (2.25.187.25) | Servidor de producción de pruebas | Todos los de la API | Pendiente: contrato, ubicación y certificaciones |
-| Let's Encrypt / sslip.io | Certificado HTTPS / nombre DNS | Ninguno | Bajo riesgo; reemplazar sslip.io por dominio propio |
+| Proveedor del VPS | Servidor de producción de pruebas | Todos los de la API | Pendiente: contrato, ubicación y certificaciones |
+| Let's Encrypt / DNS provisional | Certificado HTTPS / nombre DNS | Ninguno | Bajo riesgo; reemplazar el nombre provisional por un dominio propio |
 | GitHub | Código y CI | Código (sin datos personales) | Aceptado |
 | Apple (TestFlight/App Store) y Google Play | Distribución de la app | Ninguno de los negocios | Aceptado |
 | WhatsApp (del dueño del negocio) | Envío de recordatorios | Mensaje que el dueño decide enviar | El dueño lo opera desde su propio teléfono |

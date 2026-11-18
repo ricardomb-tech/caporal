@@ -58,13 +58,13 @@ flutter run --dart-define=API_URL=http://10.0.2.2:8080        # emulador Android
 flutter run --dart-define=API_URL=http://localhost:8080       # simulador iOS con la API local
 ```
 
-Contra el servidor de pruebas: `--dart-define=API_URL=https://caporal.2.25.187.25.sslip.io`. El número de soporte de Ayuda se define con `--dart-define=SOPORTE_WHATSAPP=57...`.
+Contra un servidor desplegado: `--dart-define=API_URL=https://<dominio-de-su-api>`. El número de soporte de Ayuda se define con `--dart-define=SOPORTE_WHATSAPP=57...`.
 
 Compilar para instalar a mano:
 
 ```bash
-flutter build apk --release --dart-define=API_URL=https://caporal.2.25.187.25.sslip.io
-flutter build ios --release --dart-define=API_URL=https://caporal.2.25.187.25.sslip.io
+flutter build apk --release --dart-define=API_URL=https://<dominio-de-su-api>
+flutter build ios --release --dart-define=API_URL=https://<dominio-de-su-api>
 ```
 
 Para Google Play hace falta una llave de firma propia (hoy el APK se firma con la llave de pruebas) y generar `flutter build appbundle`.
