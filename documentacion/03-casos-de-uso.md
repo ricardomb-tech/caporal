@@ -87,7 +87,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 ## CU-06 Registrar fiado
 
 - **Actor:** dueño. **Flujo:** toca "Fié", elige o escribe el nombre del cliente, agrega productos o valor y guarda.
-- **Alternativa:** con autorización expresa del cliente guarda su celular para cobrarle por WhatsApp; sin autorización no se guarda.
+- **Alternativa:** debajo del nombre puede escribir el celular del cliente (opcional) y marcar que el cliente aceptó que lo guarde; así queda listo para cobrarle por WhatsApp. Sin esa autorización no se guarda y la app lo explica. Si el cliente ya tiene celular guardado, lo muestra.
 - **Reglas:** el fiado descuenta inventario como una venta y suma a "Le deben"; el celular del cliente nunca sale del teléfono.
 - **Código:** `ui/anotar/pantalla_registrar.dart`, `datos/clientes.dart`.
 
@@ -112,7 +112,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 - **Actor:** dueño; destinatario: cliente. **Precondición:** el cliente debe y hay celular autorizado (o se escribe en el momento).
 - **Flujo:** en "Le deben" toca el cliente → "Cobrar por WhatsApp" → la app arma un mensaje amable con el saldo, las fechas de los fiados y la llave Bre-B del negocio → el dueño lo envía desde su propio WhatsApp.
-- **Reglas de cobro respetuoso:** entre semana de 7 a. m. a 7 p. m.; sábados de 8 a. m. a 3 p. m.; domingos no; si se le recordó hace menos de 7 días, la app lo advierte. El mensaje nunca habla de intereses, recargos ni reportes.
+- **Reglas de cobro respetuoso:** entre semana de 7 a. m. a 7 p. m.; sábados de 8 a. m. a 3 p. m.; domingos no; si se le recordó hace menos de 7 días, la app lo advierte. Fuera de horario la app no bloquea: muestra el aviso y pregunta "¿Enviar de todos modos?"; el dueño decide. El mensaje nunca habla de intereses, recargos ni reportes.
 - **Código:** `ui/clientes/pantalla_cobrar.dart`, `dominio/reglas_cobro.dart`.
 
 ## CU-10 Registrar pago de un fiado

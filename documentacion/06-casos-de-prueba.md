@@ -5,7 +5,7 @@ Caporal se prueba en tres niveles:
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
 | Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 47 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 68 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 71 |
 | Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 14 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
@@ -66,6 +66,9 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `sin autorización del cliente no se guarda su número` | `fiado_clientes_test.dart` | Ley 1581, dato de tercero |
 | `con autorización se guarda, con fecha, y se puede borrar` | `fiado_clientes_test.dart` | Autorización con fecha |
 | `un celular inválido no se guarda` | `fiado_clientes_test.dart` | Validación |
+| `al fiar se puede dejar el celular del cliente, solo con su autorización` | `fiar_con_celular_test.dart` | Celular al fiar, en pantalla |
+| `un celular mal escrito no deja guardar` | `fiar_con_celular_test.dart` | Validación en pantalla |
+| `sin celular el fiado se guarda igual` | `fiar_con_celular_test.dart` | El celular es opcional |
 | `el movimiento conserva sus datos al guardarse y leerse` | `formato_test.dart` | Persistencia local |
 | `pesos separa miles con punto` | `formato_test.dart` | Formato de pesos |
 
@@ -179,7 +182,7 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-04 | Modo avión (CU-07) | Activar modo avión → anotar venta, gasto y fiado → cerrar y abrir la app | Todo sigue ahí; aviso "Sin señal" |
 | PM-05 | Volver la señal (CU-07) | Quitar modo avión y esperar | El aviso pasa a "Copia de seguridad al día"; Estado de envío en 0 |
 | PM-06 | Reinstalar (CU-08) | Con todo al día, borrar la app, instalar y entrar | "Trayendo sus datos guardados…" y luego aparecen ventas, fiados, productos, cantidades y, en Mi negocio, la llave Bre-B |
-| PM-07 | Cobrar (CU-09) | Le deben → cliente → Cobrar por WhatsApp un domingo | Advierte que es domingo; el mensaje tiene saldo y llave Bre-B |
+| PM-07 | Cobrar (CU-09) | Le deben → cliente → Cobrar por WhatsApp un domingo o después de las 7 p. m. | Advierte y pregunta "¿Enviar de todos modos?"; al aceptar abre WhatsApp con saldo y llave Bre-B |
 | PM-08 | Pago con comprobante (CU-10) | Ya me pagó → Todo → Bre-B → número → foto → marcar "ya vi la plata" | Deuda en 0; el detalle muestra forma de pago, comprobante y foto |
 | PM-09 | Comprobante repetido (CU-10) | Registrar otro pago con el mismo número | Aviso con fecha, cliente y valor; no guarda |
 | PM-10 | Corregir (CU-11) | Abrir una venta → Corregir | Aparece el reverso; el inventario vuelve; el original sigue en el historial |

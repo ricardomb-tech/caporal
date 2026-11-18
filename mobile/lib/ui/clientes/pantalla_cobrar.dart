@@ -57,6 +57,25 @@ class _PantallaCobrarState extends State<PantallaCobrar> {
     }
   }
 
+  /// Fuera de horario no se bloquea: se recuerda la buena práctica y el dueño decide.
+  Future<void> _confirmarYEnviar(DatosCliente datos, String mensaje, String? fueraDeHorario) async {
+    if (fueraDeHorario != null) {
+      final enviar = await showDialog<bool>(
+        context: context,
+        builder: (d) => AlertDialog(
+          title: const Text('¿Enviar ahora?'),
+          content: Text(fueraDeHorario),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Mejor después')),
+            FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Enviar de todos modos')),
+          ],
+        ),
+      );
+      if (enviar != true) return;
+    }
+    await _enviar(datos, mensaje);
+  }
+
   Future<void> _pagado() async {
     final navegador = Navigator.of(context);
     if (await anotarPago(context, _d)) navegador.pop();
@@ -94,7 +113,8 @@ class _PantallaCobrarState extends State<PantallaCobrar> {
               relleno: const EdgeInsets.all(18),
               hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('Le debe', style: TextStyle(fontSize: 14, color: Colores.gris)),
-                Text(pesos(_d.saldo), style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Colores.rojo)),
+                Text(pesos(_d.saldo),
+                    style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Colores.rojo)),
                 if (fiados.fiados.isNotEmpty)
                   Text(fiados.detalle, style: const TextStyle(fontSize: 13, color: Colores.gris)),
               ]),
@@ -127,7 +147,7 @@ class _PantallaCobrarState extends State<PantallaCobrar> {
             BotonCaporal('Enviar por WhatsApp',
                 estilo: EstiloBoton.whatsapp,
                 icono: Icons.send_outlined,
-                alTocar: bloqueo != null ? null : () => _enviar(datos, mensaje)),
+                alTocar: () => _confirmarYEnviar(datos, mensaje, bloqueo)),
             const SizedBox(height: 10),
             BotonCaporal('Ya me pagó', estilo: EstiloBoton.contorno, icono: Icons.check, alTocar: _pagado),
           ]),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../dominio/movimiento.dart';
 import '../../dominio/producto.dart';
+import '../../datos/clientes.dart';
 import '../../datos/repositorio.dart';
 import '../../dominio/formato.dart';
 import 'panel_pedido.dart';
@@ -28,6 +29,10 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
 
   String _digitos = '';
   late final TextEditingController _cliente = TextEditingController(text: widget.clienteInicial ?? '');
+  // Celular del cliente al fiar (opcional): solo se guarda si el cliente lo autoriza (Ley 1581).
+  final _celularCliente = TextEditingController();
+  bool _clienteAutoriza = false;
+  String? _errorCelular;
   final _nota = TextEditingController();
   final List<Producto> _carrito = [];
 
@@ -122,7 +127,28 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
     return [for (final e in cuenta.entries) LineaVenta(productos[e.key]!, e.value)];
   }
 
+  /// Revisa el celular escrito al fiar. Devuelve el número limpio (o null si no escribió) y
+  /// deja el mensaje de error si no se puede guardar.
+  String? _celularParaGuardar() {
+    final escrito = _celularCliente.text.replaceAll(RegExp(r'[\s-]'), '');
+    if (!_esFiado || escrito.isEmpty) return null;
+    if (!Clientes.celularValido.hasMatch(escrito)) {
+      _errorCelular = 'El celular debe tener 10 números y empezar por 3.';
+    } else if (!_clienteAutoriza) {
+      _errorCelular = 'Marque que ${_cliente.text.trim()} aceptó que guarde su número, o deje el celular vacío.';
+    } else {
+      _errorCelular = null;
+    }
+    return escrito;
+  }
+
   Future<void> _guardar() async {
+    final celular = _celularParaGuardar();
+    if (_errorCelular != null) {
+      setState(() {});
+      return;
+    }
+    final clientes = context.read<Clientes>();
     setState(() => _guardando = true);
     final m = await context.read<Repositorio>().registrar(
           tipo: _tipo,
@@ -132,6 +158,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
           medioPago: _esFiado ? null : ((_esVenta || _esGasto) ? _medio : null),
           lineas: _esVenta ? _lineas : (_esPedido ? _llegada.values.toList() : const []),
         );
+    if (celular != null) await clientes.guardarCelular(_cliente.text.trim(), celular, autorizado: true);
     if (!mounted) return;
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PantallaExito(movimiento: m)));
   }
@@ -193,6 +220,18 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                       onChanged: (_) => setState(() {}),
                       textCapitalization: TextCapitalization.words,
                       decoration: InputDecoration(labelText: _esFiado ? '¿A quién le fió?' : '¿Quién le pagó?'),
+                    ),
+                  if (_esFiado && _cliente.text.trim().isNotEmpty)
+                    _CelularAlFiar(
+                      nombre: _cliente.text.trim(),
+                      controlador: _celularCliente,
+                      autoriza: _clienteAutoriza,
+                      error: _errorCelular,
+                      alCambiar: () => setState(() => _errorCelular = null),
+                      alAutorizar: (v) => setState(() {
+                        _clienteAutoriza = v;
+                        _errorCelular = null;
+                      }),
                     ),
                 ]),
               ),
@@ -272,6 +311,69 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
           ]),
         ),
       ),
+    );
+  }
+}
+
+/// Celular del cliente al fiar, para poder recordarle después por WhatsApp. Si ya está guardado,
+/// lo muestra; si no, lo pide con la autorización del cliente (sin ella no se guarda).
+class _CelularAlFiar extends StatelessWidget {
+  final String nombre;
+  final TextEditingController controlador;
+  final bool autoriza;
+  final String? error;
+  final VoidCallback alCambiar;
+  final ValueChanged<bool> alAutorizar;
+  const _CelularAlFiar({
+    required this.nombre,
+    required this.controlador,
+    required this.autoriza,
+    required this.error,
+    required this.alCambiar,
+    required this.alAutorizar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final clientes = context.watch<Clientes>();
+    return FutureBuilder<DatosCliente>(
+      future: clientes.datos(nombre),
+      builder: (_, s) {
+        final guardado = s.data?.celular;
+        if (guardado != null) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(children: [
+              const Icon(Icons.phone_outlined, size: 18, color: Colores.gris),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Celular guardado: $guardado', style: const TextStyle(fontSize: 14, color: Colores.gris)),
+              ),
+            ]),
+          );
+        }
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          TextField(
+            controller: controlador,
+            keyboardType: TextInputType.phone,
+            onChanged: (_) => alCambiar(),
+            decoration: InputDecoration(
+              labelText: 'Celular de $nombre (opcional)',
+              helperText: 'Para recordarle el pago por WhatsApp. Queda solo en este celular.',
+              errorText: error,
+            ),
+          ),
+          if (controlador.text.trim().isNotEmpty)
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              value: autoriza,
+              onChanged: (v) => alAutorizar(v ?? false),
+              title: Text('$nombre aceptó que guarde su número para recordarle pagos',
+                  style: const TextStyle(fontSize: 13)),
+            ),
+        ]);
+      },
     );
   }
 }
