@@ -1,4 +1,28 @@
-enum TipoMovimiento { venta, gasto, fiado, abono }
+/// - venta, gasto: entra o sale plata.
+/// - fiado: le vendió a un cliente que paga después; abono: el cliente le pagó (todo o parte).
+/// - compra: un proveedor le dejó mercancía para pagarle después (no sale plata todavía).
+/// - pago: le pagó a un proveedor lo que le debía (sale plata).
+/// En fiado, abono, compra y pago, [Movimiento.clienteNombre] es la otra persona: el cliente o el proveedor.
+enum TipoMovimiento {
+  venta,
+  gasto,
+  fiado,
+  abono,
+  compra,
+  pago;
+
+  /// El tipo con ese nombre, o null si es de una versión más nueva de la app que esta no conoce.
+  static TipoMovimiento? deNombre(String nombre) {
+    final n = nombre.toLowerCase();
+    for (final t in values) {
+      if (t.name == n) return t;
+    }
+    return null;
+  }
+
+  /// Si saca plata de la caja (cuenta como gasto en los resúmenes).
+  bool get salePlata => this == gasto || this == pago;
+}
 
 /// Movimiento inmutable. Una corrección es otro movimiento con [reversoDe].
 class Movimiento {

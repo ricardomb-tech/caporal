@@ -73,7 +73,7 @@ Hasta 500 movimientos por envío.
   "creadoEnDispositivo": "2026-11-17T15:00:00Z", "reversoDe": null}]}
 ```
 
-`tipo`: `VENTA | GASTO | FIADO | ABONO`. `medioPago`: `EFECTIVO | BREB | TRANSFERENCIA` u omitido. `referencia`: hasta 40 letras, números, espacios, `# . / -`.
+`tipo`: `VENTA | GASTO | FIADO | ABONO | COMPRA | PAGO` (`COMPRA`: pedido que fió un proveedor; `PAGO`: pago a un proveedor; en ambos `clienteNombre` es el proveedor). Una app que recibe un tipo que no conoce lo ignora. `medioPago`: `EFECTIVO | BREB | TRANSFERENCIA` u omitido. `referencia`: hasta 40 letras, números, espacios, `# . / -`.
 
 Respuesta: `{"aceptados": [ids nuevos], "duplicados": [ids que ya estaban], "horaServidor": "..."}`. El teléfono saca de la cola ambos grupos.
 

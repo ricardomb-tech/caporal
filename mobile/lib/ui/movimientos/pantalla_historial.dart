@@ -16,9 +16,11 @@ String _hora(DateTime f) {
 /// Signo con que se muestra un movimiento; un reverso invierte el del original.
 String signoDe(Movimiento m) {
   final ingreso = m.tipo == TipoMovimiento.venta || m.tipo == TipoMovimiento.abono;
-  final base = m.tipo == TipoMovimiento.fiado ? 0 : (ingreso ? 1 : -1);
+  // Lo fiado (al cliente o por el proveedor) no mueve plata todavía: va sin signo.
+  final sinPlata = m.tipo == TipoMovimiento.fiado || m.tipo == TipoMovimiento.compra;
+  final base = ingreso ? 1 : -1;
   final s = m.reversoDe == null ? base : -base;
-  if (m.tipo == TipoMovimiento.fiado) return m.reversoDe == null ? '' : '− ';
+  if (sinPlata) return m.reversoDe == null ? '' : '− ';
   return s > 0 ? '+ ' : '− ';
 }
 
@@ -28,6 +30,8 @@ String nombreTipo(Movimiento m) {
     TipoMovimiento.gasto => 'Gasto',
     TipoMovimiento.fiado => 'Fiado',
     TipoMovimiento.abono => 'Abono',
+    TipoMovimiento.compra => 'Pedido fiado',
+    TipoMovimiento.pago => 'Pago a proveedor',
   };
   return m.reversoDe == null ? base : 'Reverso de $base';
 }
@@ -35,6 +39,7 @@ String nombreTipo(Movimiento m) {
 /// Fila de un movimiento, usada en el inicio y en el historial.
 class FilaMovimiento extends StatelessWidget {
   final Movimiento m;
+
   /// null = no mostrar el estado de envío.
   final bool? pendiente;
   const FilaMovimiento({super.key, required this.m, this.pendiente});
@@ -46,6 +51,8 @@ class FilaMovimiento extends StatelessWidget {
       TipoMovimiento.gasto => ('G', Colores.rojo, Colores.rojoClaro),
       TipoMovimiento.fiado => ('F', Colores.ambarTexto, Colores.ambarClaro),
       TipoMovimiento.abono => ('A', Colores.verde, Colores.verdeClaro),
+      TipoMovimiento.compra => ('P', Colores.ambarTexto, Colores.ambarClaro),
+      TipoMovimiento.pago => ('P', Colores.rojo, Colores.rojoClaro),
     };
     final detalle = m.clienteNombre ?? m.descripcion;
     return FilaLista(
@@ -54,10 +61,12 @@ class FilaMovimiento extends StatelessWidget {
       detalle: _hora(m.creadoEn.toLocal()),
       alTocar: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PantallaDetalle(movimiento: m))),
       fin: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Text('${signoDe(m)}${pesos(m.valor)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+        Text('${signoDe(m)}${pesos(m.valor)}',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
         if (pendiente != null)
           Text(pendiente! ? 'Pendiente' : 'Enviado',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: pendiente! ? Colores.ambarTexto : Colores.gris)),
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w500, color: pendiente! ? Colores.ambarTexto : Colores.gris)),
       ]),
     );
   }
@@ -116,7 +125,8 @@ class _PantallaHistorialState extends State<PantallaHistorial> {
             final (lista, pendientes) = datos;
             if (lista.isEmpty) {
               return const Tarjeta(
-                  hijo: Text('No hay movimientos en este período.', style: TextStyle(fontSize: 15, color: Colores.gris)));
+                  hijo:
+                      Text('No hay movimientos en este período.', style: TextStyle(fontSize: 15, color: Colores.gris)));
             }
             final filas = <Widget>[];
             String? ultimo;
@@ -126,12 +136,14 @@ class _PantallaHistorialState extends State<PantallaHistorial> {
                 if (ultimo != null) filas.add(lineaSuave);
                 filas.add(Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Text(etiqueta, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.gris))));
+                    child: Text(etiqueta,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.gris))));
                 ultimo = etiqueta;
               }
               filas.add(FilaMovimiento(m: m, pendiente: pendientes.contains(m.id)));
             }
-            return Tarjeta(relleno: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), hijo: Column(children: filas));
+            return Tarjeta(
+                relleno: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), hijo: Column(children: filas));
           },
         ),
         const Text('Un movimiento nunca se borra: si hubo un error, se corrige. Toque uno para verlo.',

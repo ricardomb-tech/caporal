@@ -1,5 +1,6 @@
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
+import '../dominio/movimiento.dart';
 import 'cliente_api.dart';
 
 enum ResultadoRestauracion { restaurado, sesionVencida, error }
@@ -104,22 +105,28 @@ class Restauracion {
     if (cambios.isNotEmpty) await tx.update('producto', cambios, where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<void> _movimiento(Transaction tx, Map<String, dynamic> m) => tx.insert(
-        'movimiento',
-        {
-          'id': m['id'],
-          'tipo': (m['tipo'] as String).toLowerCase(),
-          'valor': m['valor'],
-          'descripcion': m['descripcion'],
-          'cliente_nombre': m['clienteNombre'],
-          'medio_pago': m['medioPago'],
-          'dispositivo_id': m['dispositivoId'],
-          'creado_en': _ms(m['creadoEnDispositivo']),
-          'reverso_de': m['reversoDe'],
-          'referencia': m['referencia'],
-        },
-        conflictAlgorithm: ConflictAlgorithm.ignore,
-      );
+  /// Un tipo que esta versión no conoce (lo anotó un celular con una versión más nueva) no se guarda:
+  /// la app no sabría mostrarlo ni sumarlo. Llega cuando se actualice la app y se vuelva a traer todo.
+  Future<void> _movimiento(Transaction tx, Map<String, dynamic> m) async {
+    final tipo = TipoMovimiento.deNombre(m['tipo'] as String);
+    if (tipo == null) return;
+    await tx.insert(
+      'movimiento',
+      {
+        'id': m['id'],
+        'tipo': tipo.name,
+        'valor': m['valor'],
+        'descripcion': m['descripcion'],
+        'cliente_nombre': m['clienteNombre'],
+        'medio_pago': m['medioPago'],
+        'dispositivo_id': m['dispositivoId'],
+        'creado_en': _ms(m['creadoEnDispositivo']),
+        'reverso_de': m['reversoDe'],
+        'referencia': m['referencia'],
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
 
   Future<void> _inventario(Transaction tx, Map<String, dynamic> i) => tx.insert(
         'mov_inventario',

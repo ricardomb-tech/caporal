@@ -13,7 +13,16 @@ class PantallaAyuda extends StatelessWidget {
 
   static const _temas = [
     (Icons.menu_book_outlined, 'Cómo anotar una venta', 'Toque Vendí, elija el producto o escriba el valor y guarde.'),
-    (Icons.people_outline, 'Cómo cobrar lo que le deben', 'En Le deben, toque el nombre y luego Cobrar por WhatsApp.'),
+    (
+      Icons.people_outline,
+      'Cómo cobrar lo que le deben',
+      'En Deudas → Le deben, toque el nombre y luego Cobrar por WhatsApp.'
+    ),
+    (
+      Icons.local_shipping_outlined,
+      'Si un proveedor le fía un pedido',
+      'Toque Gasté → Pedido, anote lo que llegó y elija "Me lo fiaron". Cuando le pague, entre a Deudas → Le debo.'
+    ),
     (Icons.wifi_off_outlined, '¿Qué pasa sin internet?', 'Todo queda guardado en el celular y se envía solo después.'),
     (Icons.lock_outline, 'Cómo cambiar mi PIN', 'En Ajustes, entre a Seguridad y cree uno nuevo.'),
   ];
@@ -41,7 +50,8 @@ class PantallaAyuda extends StatelessWidget {
             color: Colores.texto),
       ],
       pie: BotonCaporal('Escribir por WhatsApp', icono: Icons.send_outlined, alTocar: () async {
-        await launchUrl(Uri.parse('https://wa.me/$_soporte?text=${Uri.encodeComponent('Hola, necesito ayuda con Caporal')}'),
+        await launchUrl(
+            Uri.parse('https://wa.me/$_soporte?text=${Uri.encodeComponent('Hola, necesito ayuda con Caporal')}'),
             mode: LaunchMode.externalApplication);
       }),
     );

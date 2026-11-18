@@ -43,7 +43,7 @@ erDiagram
     MOVIMIENTO {
         uuid id PK "generado en el teléfono"
         uuid usuario_id FK
-        varchar tipo "VENTA | GASTO | FIADO | ABONO"
+        varchar tipo "VENTA | GASTO | FIADO | ABONO | COMPRA | PAGO"
         bigint valor "pesos, siempre positivo"
         varchar descripcion
         varchar cliente_nombre
@@ -99,7 +99,7 @@ erDiagram
 | Tabla | Para qué | Reglas |
 |---|---|---|
 | `usuario` | Cuenta y perfil del negocio | `celular` único; 5 intentos fallidos bloquean 15 minutos; claves bcrypt antiguas se migran a Argon2id al entrar; el perfil se reemplaza solo por uno con `perfil_en` más reciente |
-| `movimiento` | Ventas, gastos, fiados y abonos | Inmutable; `valor > 0`; el signo lo da el `tipo`; `reverso_de` anula otro movimiento; índice por (`usuario_id`, `recibido_en`) |
+| `movimiento` | Ventas, gastos, fiados, abonos, pedidos fiados por un proveedor (`COMPRA`) y pagos a proveedores (`PAGO`); `cliente_nombre` es el cliente o el proveedor | Inmutable; `valor > 0`; el signo lo da el `tipo`; `reverso_de` anula otro movimiento; índice por (`usuario_id`, `recibido_en`) |
 | `producto` | Catálogo | Cada campo se fusiona por su `*_en` más reciente (también el costo, que es opcional: un envío sin costo no borra el guardado); un producto de otro negocio nunca se modifica |
 | `mov_inventario` | Cambios de cantidad | Inmutable; `delta ≠ 0`; cantidad = suma de `delta` por producto |
 | `sesion` | Tokens de renovación | Solo la huella SHA-256; un solo uso; reutilizar uno revocado revoca todas las sesiones del negocio |
@@ -120,7 +120,7 @@ erDiagram
 
     MOVIMIENTO {
         text id PK
-        text tipo "venta | gasto | fiado | abono"
+        text tipo "venta | gasto | fiado | abono | compra | pago"
         int valor
         text descripcion
         text cliente_nombre

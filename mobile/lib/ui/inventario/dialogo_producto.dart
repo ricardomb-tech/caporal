@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../comun/negocio_actual.dart';
 import 'package:provider/provider.dart';
 
 import '../../datos/inventario.dart';
@@ -112,7 +113,10 @@ class _DialogoProductoState extends State<_DialogoProducto> {
             initialValue: _categoria,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Categoría'),
-            items: [for (final c in Categorias.todas) DropdownMenuItem(value: c, child: Text(c))],
+            items: [
+              for (final c in Categorias.para(negocioActual(context).nombre, actual: widget.producto?.categoria))
+                DropdownMenuItem(value: c, child: Text(c))
+            ],
             onChanged: (c) => setState(() => _categoria = c),
           ),
           const SizedBox(height: 10),

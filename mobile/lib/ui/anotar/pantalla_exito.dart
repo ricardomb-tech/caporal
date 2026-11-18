@@ -18,6 +18,8 @@ class PantallaExito extends StatelessWidget {
         TipoMovimiento.gasto => '¡Gasto guardado!',
         TipoMovimiento.fiado => '¡Deuda anotada!',
         TipoMovimiento.abono => '¡Pago anotado!',
+        TipoMovimiento.compra => '¡Pedido anotado en Le debo!',
+        TipoMovimiento.pago => '¡Pago al proveedor anotado!',
       };
 
   @override
@@ -47,10 +49,14 @@ class PantallaExito extends StatelessWidget {
               decoration: BoxDecoration(
                   color: pendiente ? Colores.ambarClaro : Colores.verdeClaro, borderRadius: BorderRadius.circular(20)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(pendiente ? Icons.schedule : Icons.check_circle_outline, size: 16, color: pendiente ? Colores.ambarTexto : Colores.verde),
+                Icon(pendiente ? Icons.schedule : Icons.check_circle_outline,
+                    size: 16, color: pendiente ? Colores.ambarTexto : Colores.verde),
                 const SizedBox(width: 6),
                 Text(pendiente ? 'Pendiente de enviar' : 'Copia al día',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: pendiente ? Colores.ambarTexto : Colores.verde)),
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: pendiente ? Colores.ambarTexto : Colores.verde)),
               ]),
             ),
             const SizedBox(height: 16),
@@ -69,7 +75,8 @@ class PantallaExito extends StatelessWidget {
                 alTocar: () => Navigator.pushReplacement(
                     context, MaterialPageRoute(builder: (_) => PantallaRegistrar(tipo: movimiento.tipo)))),
             const SizedBox(height: 10),
-            BotonCaporal('Volver al inicio', estilo: EstiloBoton.contorno, alTocar: () => Navigator.popUntil(context, (r) => r.isFirst)),
+            BotonCaporal('Volver al inicio',
+                estilo: EstiloBoton.contorno, alTocar: () => Navigator.popUntil(context, (r) => r.isFirst)),
           ]),
         ),
       ),

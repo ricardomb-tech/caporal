@@ -81,7 +81,8 @@ class Repositorio extends ChangeNotifier {
       final total = (f['total'] as int?) ?? 0;
       // Lo fiado es una venta que todavía no se ha cobrado.
       if (f['tipo'] == 'venta' || f['tipo'] == 'fiado') ventas += total;
-      if (f['tipo'] == 'gasto') gastos += total;
+      // Pagarle a un proveedor también es plata que sale; un pedido fiado no, hasta que se paga.
+      if (f['tipo'] == 'gasto' || f['tipo'] == 'pago') gastos += total;
     }
     return ResumenHoy(ventas, gastos);
   }
@@ -104,6 +105,54 @@ class Repositorio extends ChangeNotifier {
           DateTime.fromMillisecondsSinceEpoch(f['desde'] as int, isUtc: true).toLocal(),
         ),
     ];
+  }
+
+  /// Proveedores a los que se les debe: pedidos fiados menos lo que se les ha pagado.
+  Future<List<DeudaConProveedor>> deudasConProveedores() async {
+    final filas = await db.rawQuery('''
+      SELECT cliente_nombre AS nombre,
+             SUM((CASE WHEN tipo = 'compra' THEN valor ELSE -valor END) * (CASE WHEN reverso_de IS NULL THEN 1 ELSE -1 END)) AS saldo,
+             MIN(CASE WHEN tipo = 'compra' THEN creado_en END) AS desde
+      FROM movimiento
+      WHERE tipo IN ('compra', 'pago') AND cliente_nombre IS NOT NULL
+      GROUP BY cliente_nombre
+      HAVING saldo > 0
+      ORDER BY desde ASC''');
+    return [
+      for (final f in filas)
+        DeudaConProveedor(
+          f['nombre'] as String,
+          f['saldo'] as int,
+          DateTime.fromMillisecondsSinceEpoch(f['desde'] as int, isUtc: true).toLocal(),
+        ),
+    ];
+  }
+
+  /// Lo que se le debe hoy a un proveedor (pedidos fiados menos pagos, contando los reversos).
+  Future<int> saldoConProveedor(String proveedor) async {
+    final r = await db.rawQuery('''
+      SELECT COALESCE(SUM((CASE WHEN tipo = 'compra' THEN valor ELSE -valor END)
+                          * (CASE WHEN reverso_de IS NULL THEN 1 ELSE -1 END)), 0) AS saldo
+      FROM movimiento WHERE tipo IN ('compra', 'pago') AND cliente_nombre = ?''', [proveedor]);
+    return r.first['saldo'] as int;
+  }
+
+  /// Lo que se ha hecho con un proveedor: pedidos (pagados o fiados) y pagos.
+  Future<List<Movimiento>> deProveedor(String nombre) async {
+    final filas = await db.query('movimiento',
+        where: "cliente_nombre = ? AND tipo IN ('gasto', 'compra', 'pago')",
+        whereArgs: [nombre],
+        orderBy: 'creado_en DESC');
+    return filas.map(Movimiento.deFila).toList();
+  }
+
+  /// Nombres de los proveedores ya usados, del más reciente al más viejo, para no escribirlos cada vez.
+  Future<List<String>> nombresDeProveedores({int limite = 30}) async {
+    final filas = await db.rawQuery('''
+      SELECT cliente_nombre AS nombre FROM movimiento
+      WHERE tipo IN ('gasto', 'compra', 'pago') AND cliente_nombre IS NOT NULL
+      GROUP BY cliente_nombre ORDER BY MAX(creado_en) DESC LIMIT ?''', [limite]);
+    return [for (final f in filas) f['nombre'] as String];
   }
 
   Future<List<Movimiento>> ultimos({int limite = 10}) async {
@@ -195,6 +244,14 @@ class Repositorio extends ChangeNotifier {
             'Para corregirlo, primero corrija ese pago en "Le deben" o en Movimientos.';
       }
     }
+    if (m.tipo == TipoMovimiento.compra && m.clienteNombre != null) {
+      final saldo = await saldoConProveedor(m.clienteNombre!);
+      if (saldo - m.valor < 0) {
+        final pagado = m.valor - saldo;
+        return 'Ya le pagó ${pesos(pagado)} de este pedido a ${m.clienteNombre}. '
+            'Para corregirlo, primero corrija ese pago en "Le debo" o en Movimientos.';
+      }
+    }
     return null;
   }
 
@@ -227,7 +284,7 @@ class Repositorio extends ChangeNotifier {
             if (f.year != d.year || f.month != d.month || f.day != d.day) continue;
             final signo = m.reversoDe == null ? 1 : -1;
             if (m.tipo == TipoMovimiento.venta || m.tipo == TipoMovimiento.fiado) v += signo * m.valor;
-            if (m.tipo == TipoMovimiento.gasto) g += signo * m.valor;
+            if (m.tipo.salePlata) g += signo * m.valor;
           }
           return ResumenDia(d, v, g);
         }(),

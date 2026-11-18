@@ -16,8 +16,8 @@ import '../comun/tema.dart';
 import '../comun/widgets.dart';
 
 class PantallaInicio extends StatelessWidget {
-  /// Cambia a la pestaña "Le deben".
-  final VoidCallback verDeudores;
+  /// Cambia a la pestaña Deudas: "Le deben" o, con debo, "Le debo".
+  final void Function({bool debo}) verDeudores;
   const PantallaInicio({super.key, required this.verDeudores});
 
   @override
@@ -83,19 +83,41 @@ class PantallaInicio extends StatelessWidget {
                 _Accion(
                     'Fié', Icons.schedule, Colores.ambarTexto, Colores.ambarClaro, () => abrir(TipoMovimiento.fiado)),
               ]),
-              FutureBuilder<List<Deudor>>(
-                future: repo.deudores(),
+              FutureBuilder<(int, int)>(
+                future: () async {
+                  final deben = (await repo.deudores()).fold<int>(0, (a, x) => a + x.saldo);
+                  final debo = (await repo.deudasConProveedores()).fold<int>(0, (a, x) => a + x.saldo);
+                  return (deben, debo);
+                }(),
                 builder: (_, d) {
-                  final total = (d.data ?? const <Deudor>[]).fold<int>(0, (a, x) => a + x.saldo);
+                  final (total, debo) = d.data ?? (0, 0);
                   return Tarjeta(
-                    hijo: Row(children: [
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Text('Le deben', style: TextStyle(color: Colores.gris, fontSize: 14)),
-                          Text(pesos(total), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    hijo: Column(children: [
+                      Row(children: [
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            const Text('Le deben', style: TextStyle(color: Colores.gris, fontSize: 14)),
+                            Text(pesos(total), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                          ]),
+                        ),
+                        FilledButton.tonal(onPressed: () => verDeudores(), child: const Text('Ver')),
+                      ]),
+                      // Solo si le debe a algún proveedor: a quien no fía pedidos no le estorba.
+                      if (debo > 0) ...[
+                        const SizedBox(height: 8),
+                        Row(children: [
+                          Expanded(
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              const Text('Usted debe a proveedores',
+                                  style: TextStyle(color: Colores.gris, fontSize: 14)),
+                              Text(pesos(debo),
+                                  style:
+                                      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colores.rojo)),
+                            ]),
+                          ),
+                          TextButton(onPressed: () => verDeudores(debo: true), child: const Text('Ver')),
                         ]),
-                      ),
-                      FilledButton.tonal(onPressed: verDeudores, child: const Text('Ver')),
+                      ],
                     ]),
                   );
                 },

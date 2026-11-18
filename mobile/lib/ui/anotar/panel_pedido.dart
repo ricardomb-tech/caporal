@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../datos/repositorio.dart';
 import '../../dominio/formato.dart';
+import '../../dominio/categorias.dart';
 import '../../dominio/precios.dart';
 import '../../dominio/producto.dart';
 import '../../sincronizacion/sesion.dart';
 import 'selector_productos.dart';
 import '../comun/tema.dart';
 
-/// Lo que llegó en un pedido: productos con su cantidad y, si quiere, de quién.
-/// Al guardar el gasto, esas unidades se suman al inventario.
+/// Lo que llegó en un pedido: productos con su cantidad y de quién. Al guardar, esas unidades
+/// se suman al inventario. Si el proveedor lo fió, el proveedor es obligatorio (queda en "Le debo").
 class PanelPedido extends StatelessWidget {
   final List<LineaVenta> lineas;
   final TextEditingController proveedor;
+  final bool fiado;
+  final VoidCallback alCambiarProveedor;
   final ValueChanged<LineaVenta> alCambiar;
   final ValueChanged<Producto> alQuitar;
   const PanelPedido({
@@ -21,7 +25,11 @@ class PanelPedido extends StatelessWidget {
     required this.proveedor,
     required this.alCambiar,
     required this.alQuitar,
+    this.fiado = false,
+    this.alCambiarProveedor = _nada,
   });
+
+  static void _nada() {}
 
   Future<void> _elegir(BuildContext context, Producto p) async {
     final actual = lineas.where((l) => l.producto.id == p.id).firstOrNull;
@@ -50,10 +58,69 @@ class PanelPedido extends StatelessWidget {
         ]),
       ],
       const SizedBox(height: 6),
+      CampoProveedor(
+        controlador: proveedor,
+        etiqueta: fiado ? '¿Quién se lo fió? (proveedor)' : '¿De quién? (opcional)',
+        ayuda: fiado ? 'Queda en "Le debo" hasta que le pague. No sale plata de la caja hoy.' : null,
+        alCambiar: alCambiarProveedor,
+      ),
+    ]);
+  }
+}
+
+/// Nombre del proveedor, con los que ya ha usado a un toque (para no escribirlos cada vez
+/// ni crear dos "proveedores" por escribirlo distinto).
+class CampoProveedor extends StatefulWidget {
+  final TextEditingController controlador;
+  final String etiqueta;
+  final String? ayuda;
+  final VoidCallback alCambiar;
+  const CampoProveedor(
+      {super.key, required this.controlador, required this.etiqueta, this.ayuda, required this.alCambiar});
+
+  @override
+  State<CampoProveedor> createState() => _CampoProveedorState();
+}
+
+class _CampoProveedorState extends State<CampoProveedor> {
+  late final Future<List<String>> _conocidos = context.read<Repositorio>().nombresDeProveedores();
+
+  void _elegir(String nombre) {
+    widget.controlador.text = nombre;
+    widget.alCambiar();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       TextField(
-        controller: proveedor,
+        controller: widget.controlador,
         textCapitalization: TextCapitalization.words,
-        decoration: const InputDecoration(labelText: '¿De quién? (opcional)', isDense: true),
+        onChanged: (_) {
+          widget.alCambiar();
+          setState(() {});
+        },
+        decoration:
+            InputDecoration(labelText: widget.etiqueta, helperText: widget.ayuda, helperMaxLines: 2, isDense: true),
+      ),
+      FutureBuilder<List<String>>(
+        future: _conocidos,
+        builder: (_, s) {
+          final escrito = widget.controlador.text.trim();
+          final q = Categorias.normalizar(escrito);
+          final opciones = [
+            for (final n in s.data ?? const <String>[])
+              if (n != escrito && Categorias.normalizar(n).contains(q)) n
+          ].take(6).toList();
+          if (opciones.isEmpty) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Wrap(spacing: 6, runSpacing: 6, children: [
+              for (final n in opciones) ActionChip(label: Text(n), onPressed: () => _elegir(n)),
+            ]),
+          );
+        },
       ),
     ]);
   }

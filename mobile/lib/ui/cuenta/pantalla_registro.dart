@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../dominio/tipos_de_negocio.dart';
 import '../../sincronizacion/sesion.dart';
 import 'preparar_cuenta.dart';
 import '../comun/formulario_guiado.dart';
@@ -9,7 +10,7 @@ import '../comun/widgets.dart';
 
 /// Tipos de negocio que se ofrecen al registrarse y en Mi negocio.
 class PantallaRegistroTipos {
-  static const tipos = ['Tienda', 'Restaurante', 'Taller', 'Ambulante', 'Otro'];
+  static List<String> get tipos => TiposDeNegocio.nombres;
 }
 
 /// Crear la cuenta paso a paso: una pregunta por pantalla, con qué va y un ejemplo.

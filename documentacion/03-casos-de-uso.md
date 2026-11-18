@@ -22,9 +22,12 @@ flowchart LR
         CU14["CU-14 Editar datos"]
         CU15["CU-15 Exportar o borrar mis datos"]
         CU16["CU-16 Cerrar sesión"]
+        CU17["CU-17 Pedido fiado y pago a proveedor"]
     end
-    D --- CU01 & CU02 & CU03 & CU04 & CU05 & CU06 & CU09 & CU10 & CU11 & CU12 & CU13 & CU14 & CU15 & CU16
+    P(["Proveedor"])
+    D --- CU01 & CU02 & CU03 & CU04 & CU05 & CU06 & CU09 & CU10 & CU11 & CU12 & CU13 & CU14 & CU15 & CU16 & CU17
     CU09 -.-> C
+    CU17 -.-> P
     CU07 --- S
     CU08 --- S
     CU04 -.->|incluye| CU07
@@ -40,7 +43,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 - **Actor:** dueño del negocio. **Precondición:** no tiene cuenta con ese celular. No necesita Internet.
 - **Flujo principal** (formulario guiado, una pregunta por pantalla con botón "Seguir"):
   1. Escribe su nombre, celular (10 números, empieza por 3) y, si quiere, su correo.
-  2. Escribe el nombre del negocio, elige el tipo y el municipio.
+  2. Escribe el nombre del negocio, elige el tipo (Tienda, Restaurante, Taller, Peluquería, Ropa, Droguería, Ambulante, Servicios u Otro) y el municipio. El tipo adapta la app: categorías de productos, gastos frecuentes, ganancia recomendada y ejemplos.
   3. Crea una clave de mínimo 8 caracteres (no puede ser su celular).
   4. Lee qué se guarda y para qué, y marca que autoriza el tratamiento de sus datos (Ley 1581).
   5. Pulsa "Crear mi cuenta": el servidor crea la cuenta y abre la sesión.
@@ -83,9 +86,10 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 ## CU-05 Registrar gasto o pedido
 
-- **Actor:** dueño. **Flujo:** toca "Gasté", elige la categoría (Pedido, Mercado, Arriendo, Servicios, Transporte u Otro), escribe el valor y guarda.
+- **Actor:** dueño. **Flujo:** toca "Gasté", elige la categoría (Pedido, las propias de su tipo de negocio, por ejemplo Gas en un restaurante o Herramientas en un taller, y Otro), escribe el valor y guarda.
 - **Alternativa "Pedido":** indica qué productos llegaron, cuántos y, si quiere, **cuánto le costó cada uno**; el inventario suma esas unidades y el costo queda en el producto. Si con ese costo gana menos de lo que eligió, la app ofrece subir el precio al sugerido. Si un producto no llevaba cuenta, empieza a llevarla.
-- **Código:** `ui/anotar/pantalla_registrar.dart`, `ui/anotar/panel_pedido.dart`.
+- **Proveedor:** en un pedido escribe de quién es o toca uno que ya usó. Si el proveedor se lo fió, ver CU-17.
+- **Código:** `ui/anotar/pantalla_registrar.dart`, `ui/anotar/panel_pedido.dart`, `dominio/tipos_de_negocio.dart`.
 
 ## CU-06 Registrar fiado
 
@@ -146,7 +150,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 ## CU-13 Consultar cuentas
 
-- **Actor:** dueño. **Flujo:** el inicio muestra lo que ganó hoy (ventas − gastos), lo que le deben, el valor del inventario y lo último; "Resumen" muestra la semana; "Historial" agrupa por día y mes.
+- **Actor:** dueño. **Flujo:** el inicio muestra lo que ganó hoy (ventas − gastos), lo que le deben, lo que debe a proveedores (si debe algo), el valor del inventario y lo último; "Resumen" muestra la semana; "Historial" agrupa por día y mes.
 - **Código:** `ui/inicio/pantalla_inicio.dart`, `ui/movimientos/`.
 
 ## CU-14 Editar datos personales y del negocio
@@ -165,3 +169,19 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 - **Actor:** dueño. **Flujo:** en Ajustes, "Cerrar sesión" → la app avisa al servidor que ese token de renovación ya no sirve y lo borra del teléfono. Al volver a entrar se ejecuta CU-08.
 - **Código:** `sincronizacion/sesion.dart`. API `cuenta/web/SesionController` (`/auth/salir`).
+
+## CU-17 Pedido fiado y pago a proveedor
+
+- **Actor:** dueño; el proveedor es externo (no usa la app). **Precondición:** ninguna; funciona sin Internet.
+- **Flujo principal:**
+  1. Toca "Gasté" → "Pedido", toca los productos que llegaron con su cantidad y costo.
+  2. En la forma de pago elige **"Me lo fiaron"** y escribe o toca el proveedor (obligatorio).
+  3. Escribe el valor del pedido y toca "Anotar lo que debo".
+  4. Cuando le paga: Deudas → **Le debo** → proveedor → "Ya le pagué" (abre con lo que debe; puede pagar una parte) → Efectivo o Bre-B → "Guardar pago".
+- **Reglas:**
+  - El pedido fiado suma al inventario y actualiza el costo, pero **no** cuenta como gasto del día: la plata todavía no sale. El pago sí cuenta como gasto.
+  - "Le debo" = pedidos fiados − pagos, por proveedor. El inicio muestra el total si es mayor que cero.
+  - Un pedido fiado que ya se empezó a pagar no se corrige directamente: primero se corrige el pago (igual que un fiado de cliente).
+  - Se guarda como movimiento `COMPRA` (pedido fiado) o `PAGO` (pago al proveedor); el nombre del proveedor va en `clienteNombre`.
+- **Resultado:** el dueño sabe cuánto le debe a cada proveedor y cuánto le ha pedido en el mes.
+- **Código:** App `ui/anotar/pantalla_registrar.dart`, `ui/anotar/panel_pedido.dart`, `ui/clientes/pantalla_deudores.dart`, `ui/proveedores/pantalla_proveedor.dart`, `datos/repositorio.dart`. API `sincronizacion/dominio/TipoMovimiento`.

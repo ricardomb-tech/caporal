@@ -195,11 +195,11 @@ class Inventario extends ChangeNotifier {
   }
 
   /// Aplica al inventario las líneas de un movimiento de dinero, dentro de su misma transacción:
-  /// una venta (de contado o fiada) descuenta; un gasto de pedido suma lo que llegó.
+  /// una venta (de contado o fiada) descuenta; un pedido que llegó (pagado o fiado por el proveedor) suma.
   Future<void> aplicarLineas(DatabaseExecutor tx, Movimiento m, List<LineaVenta> lineas) async {
     for (final l in lineas) {
       if (l.cantidad <= 0) continue;
-      if (m.tipo == TipoMovimiento.gasto) {
+      if (m.tipo == TipoMovimiento.gasto || m.tipo == TipoMovimiento.compra) {
         // Si llegó mercancía de un producto que no llevaba cuenta, empieza a llevarla.
         await _asegurarControl(tx, l.producto.id);
         await _evento(tx,

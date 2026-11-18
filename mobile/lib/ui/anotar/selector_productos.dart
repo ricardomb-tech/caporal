@@ -6,6 +6,7 @@ import '../../dominio/categorias.dart';
 import '../../dominio/producto.dart';
 import '../../dominio/formato.dart';
 import '../inventario/dialogo_producto.dart';
+import '../comun/negocio_actual.dart';
 import '../comun/tema.dart';
 import '../comun/widgets.dart';
 
@@ -66,10 +67,7 @@ class _SelectorProductosState extends State<SelectorProductos> {
       future: _productos,
       builder: (_, s) {
         final todos = s.data ?? const <Producto>[];
-        final categorias = [
-          for (final c in Categorias.todas)
-            if (todos.any((p) => p.categoria == c)) c
-        ];
+        final categorias = Categorias.presentes(todos, negocioActual(context).nombre);
         final lista = [
           for (final p in todos)
             if (Categorias.coincide(p, busqueda: _busqueda.text, categoria: _categoria)) p,

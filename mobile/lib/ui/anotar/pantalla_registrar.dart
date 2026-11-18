@@ -7,6 +7,8 @@ import '../../datos/clientes.dart';
 import '../../datos/inventario.dart';
 import '../../datos/repositorio.dart';
 import '../../dominio/formato.dart';
+import '../../dominio/tipos_de_negocio.dart';
+import '../comun/negocio_actual.dart';
 import 'panel_pedido.dart';
 import 'lista_venta.dart';
 import 'pantalla_exito.dart';
@@ -22,17 +24,22 @@ class PantallaRegistrar extends StatefulWidget {
   /// Movimiento que se está corrigiendo: la pantalla abre con sus datos (valor, productos, cliente,
   /// forma de pago) para cambiar solo lo que estaba mal.
   final Movimiento? corrigiendo;
-  const PantallaRegistrar({super.key, required this.tipo, this.clienteInicial, this.corrigiendo});
+
+  /// Valor con que abre (por ejemplo, lo que se le debe a un proveedor al ir a pagarle).
+  final int? valorInicial;
+  const PantallaRegistrar({super.key, required this.tipo, this.clienteInicial, this.corrigiendo, this.valorInicial});
 
   @override
   State<PantallaRegistrar> createState() => _PantallaRegistrarState();
 }
 
 class _PantallaRegistrarState extends State<PantallaRegistrar> {
-  static const _pedido = 'Pedido';
-  static const _categorias = [_pedido, 'Mercado', 'Arriendo', 'Servicios', 'Transporte', 'Otro'];
+  static const _pedido = TiposDeNegocio.pedido;
 
-  String _digitos = '';
+  /// Gastos que más anota este tipo de negocio, con "Pedido" primero.
+  late final List<String> _categorias = TiposDeNegocio.gastosDe(negocioActual(context).nombre);
+
+  late String _digitos = widget.valorInicial?.toString() ?? '';
   late final TextEditingController _cliente =
       TextEditingController(text: widget.corrigiendo?.clienteNombre ?? widget.clienteInicial ?? '');
   // Celular del cliente al fiar (opcional): solo se guarda si el cliente lo autoriza (Ley 1581).
@@ -40,11 +47,19 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   bool _clienteAutoriza = false;
   String? _errorCelular;
   final _nota = TextEditingController();
+
+  /// Proveedor de un pedido (o a quién se le pagó). Al fiarle el pedido, es obligatorio.
+  late final _proveedor = TextEditingController(
+      text:
+          widget.tipo == TipoMovimiento.pago ? (widget.corrigiendo?.clienteNombre ?? widget.clienteInicial ?? '') : '');
+
+  /// El proveedor dejó el pedido para pagárselo después.
+  late bool _meFiaron = widget.tipo == TipoMovimiento.compra;
   final List<Producto> _carrito = [];
 
   /// Lo que llegó en un pedido (gasto de mercancía), por producto.
   final Map<String, LineaVenta> _llegada = {};
-  String _categoria = _categorias.first;
+  late String _categoria = _categorias.first;
   String _medio = 'EFECTIVO';
   bool _guardando = false;
 
@@ -64,11 +79,14 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
     _digitos = m.valor.toString();
     if (m.medioPago != null) _medio = m.medioPago!;
     final partes = (m.descripcion ?? '').split(' · ');
-    if (m.tipo == TipoMovimiento.gasto && _categorias.contains(partes.first)) {
+    if (_esGasto && TiposDeNegocio.todasLasDeGasto.contains(partes.first)) {
       _categoria = partes.first;
+      // Si el negocio cambió de tipo, la categoría del gasto original se sigue ofreciendo.
+      if (!_categorias.contains(_categoria)) _categorias.insert(_categorias.length - 1, _categoria);
       final nota = partes.length > 1 && partes.first != _pedido ? partes.sublist(1).join(' · ') : '';
       _nota.text = nota;
     }
+    if (_esGasto && m.clienteNombre != null) _proveedor.text = m.clienteNombre!;
     final lineas = await context.read<Inventario>().lineasDe(m.id);
     if (!mounted) return;
     setState(() {
@@ -85,10 +103,22 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   }
 
   int get _valor => _digitos.isEmpty ? 0 : int.parse(_digitos);
-  TipoMovimiento get _tipo => _fiado ? TipoMovimiento.fiado : widget.tipo;
+  TipoMovimiento get _tipo {
+    if (_fiado) return TipoMovimiento.fiado;
+    if (_esGasto) return _esPedido && _meFiaron ? TipoMovimiento.compra : TipoMovimiento.gasto;
+    return widget.tipo;
+  }
+
   bool get _esFiado => _tipo == TipoMovimiento.fiado;
-  bool get _esGasto => _tipo == TipoMovimiento.gasto;
+
+  /// Pantalla de gasto: un gasto o un pedido (pagado o fiado por el proveedor).
+  bool get _esGasto => widget.tipo == TipoMovimiento.gasto || widget.tipo == TipoMovimiento.compra;
   bool get _esPedido => _esGasto && _categoria == _pedido;
+  bool get _esCompraFiada => _tipo == TipoMovimiento.compra;
+  bool get _esPagoProveedor => widget.tipo == TipoMovimiento.pago;
+
+  /// El proveedor que se escribió (o null si se dejó vacío).
+  String? get _nombreProveedor => _proveedor.text.trim().isEmpty ? null : _proveedor.text.trim();
 
   /// Venta de contado o fiada: se eligen productos y se descuentan del inventario.
   bool get _esVenta => widget.tipo == TipoMovimiento.venta || widget.tipo == TipoMovimiento.fiado;
@@ -98,6 +128,8 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
         TipoMovimiento.gasto => 'Gasté',
         TipoMovimiento.fiado => 'Vendí fiado',
         TipoMovimiento.abono => 'Me pagaron',
+        TipoMovimiento.compra => 'Pedido fiado',
+        TipoMovimiento.pago => 'Le pagué a un proveedor',
       };
 
   String get _subtitulo => widget.corrigiendo != null
@@ -107,9 +139,13 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
           TipoMovimiento.gasto => 'Anote lo que pagó; si llegó mercancía, elija Pedido',
           TipoMovimiento.fiado => 'Lo que se lleva y quién lo paga después',
           TipoMovimiento.abono => 'Anote lo que le pagaron',
+          TipoMovimiento.compra => 'Lo que llegó y a quién se lo debe',
+          TipoMovimiento.pago => 'Anote cuánto le pagó',
         };
 
-  Color get _colorMonto => _esGasto ? Colores.rojo : (_esFiado ? Colores.ambarTexto : Colores.verde);
+  Color get _colorMonto => (_esFiado || _esCompraFiada)
+      ? Colores.ambarTexto
+      : ((_esGasto || _esPagoProveedor) ? Colores.rojo : Colores.verde);
 
   void _tecla(String t) {
     setState(() {
@@ -148,7 +184,8 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
         _categoria,
         if (_esPedido && _llegada.isNotEmpty)
           _llegada.values.map((l) => '${l.cantidad} ${l.producto.nombre}').join(', '),
-        if (_nota.text.trim().isNotEmpty) _nota.text.trim(),
+        // En un pedido, el proveedor va aparte (como la otra persona del movimiento).
+        if (!_esPedido && _nota.text.trim().isNotEmpty) _nota.text.trim(),
       ];
       return partes.join(' · ');
     }
@@ -194,8 +231,10 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
           tipo: _tipo,
           valor: _valor,
           descripcion: _descripcion,
-          clienteNombre: (_esFiado || widget.tipo == TipoMovimiento.abono) ? _cliente.text.trim() : null,
-          medioPago: _esFiado ? null : ((_esVenta || _esGasto) ? _medio : null),
+          clienteNombre: (_esFiado || widget.tipo == TipoMovimiento.abono)
+              ? _cliente.text.trim()
+              : ((_esPedido || _esPagoProveedor) ? _nombreProveedor : null),
+          medioPago: (_esFiado || _esCompraFiada) ? null : ((_esVenta || _esGasto || _esPagoProveedor) ? _medio : null),
           lineas: _esVenta ? _lineas : (_esPedido ? _llegada.values.toList() : const []),
         );
     if (celular != null) await clientes.guardarCelular(_cliente.text.trim(), celular, autorizado: true);
@@ -205,7 +244,11 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
 
   @override
   Widget build(BuildContext context) {
-    final puedeGuardar = _valor > 0 && !_guardando && (!_esFiado || _cliente.text.trim().isNotEmpty);
+    final puedeGuardar = _valor > 0 &&
+        !_guardando &&
+        (!_esFiado || _cliente.text.trim().isNotEmpty) &&
+        // A quién se le debe o se le pagó tiene que quedar claro.
+        (!(_esCompraFiada || _esPagoProveedor) || _nombreProveedor != null);
     return Scaffold(
       // El teclado del sistema pasa por encima del teclado numérico (que no se usa mientras se escribe un nombre).
       resizeToAvoidBottomInset: false,
@@ -249,11 +292,16 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                     const SizedBox(height: 8),
                     PanelPedido(
                       lineas: _llegada.values.toList(),
-                      proveedor: _nota,
+                      proveedor: _proveedor,
+                      fiado: _meFiaron,
+                      alCambiarProveedor: () => setState(() {}),
                       alCambiar: (l) => setState(() => _llegada[l.producto.id] = l),
                       alQuitar: (p) => setState(() => _llegada.remove(p.id)),
                     ),
                   ],
+                  if (_esPagoProveedor)
+                    CampoProveedor(
+                        controlador: _proveedor, etiqueta: '¿A quién le pagó?', alCambiar: () => setState(() {})),
                   if (_esFiado || widget.tipo == TipoMovimiento.abono)
                     TextField(
                       controller: _cliente,
@@ -285,7 +333,7 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               ]),
             ),
             const SizedBox(height: 8),
-            if (_esVenta || _esGasto)
+            if (_esVenta || _esGasto || _esPagoProveedor)
               Align(
                 alignment: Alignment.centerLeft,
                 child: Wrap(spacing: 8, children: [
@@ -294,15 +342,21 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
                       alTocar: () => setState(() {
                             _medio = 'EFECTIVO';
                             _fiado = false;
+                            _meFiaron = false;
                           })),
                   ChipCaporal('Bre-B',
                       seleccionado: !_esFiado && _medio == 'BREB',
                       alTocar: () => setState(() {
                             _medio = 'BREB';
                             _fiado = false;
+                            _meFiaron = false;
                           })),
                   if (_esVenta)
                     ChipCaporal('Fiado', seleccionado: _esFiado, alTocar: () => setState(() => _fiado = true)),
+                  // El proveedor dejó el pedido y se le paga después: queda en "Le debo", no sale plata hoy.
+                  if (_esPedido)
+                    ChipCaporal('Me lo fiaron',
+                        seleccionado: _meFiaron, alTocar: () => setState(() => _meFiaron = true)),
                 ]),
               ),
             const SizedBox(height: 6),
@@ -346,8 +400,14 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
               ]),
             ),
             const SizedBox(height: 8),
-            BotonCaporal(_esGasto ? 'Guardar gasto' : (_esFiado ? 'Anotar deuda' : 'Guardar'),
-                icono: Icons.check, alTocar: puedeGuardar ? _guardar : null),
+            BotonCaporal(
+                _esCompraFiada
+                    ? 'Anotar lo que debo'
+                    : (_esGasto
+                        ? 'Guardar gasto'
+                        : (_esFiado ? 'Anotar deuda' : (_esPagoProveedor ? 'Guardar pago' : 'Guardar'))),
+                icono: Icons.check,
+                alTocar: puedeGuardar ? _guardar : null),
           ]),
         ),
       ),

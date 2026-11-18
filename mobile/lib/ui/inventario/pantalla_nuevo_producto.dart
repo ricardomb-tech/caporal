@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../datos/inventario.dart';
 import '../../dominio/categorias.dart';
+import '../comun/negocio_actual.dart';
 import '../../dominio/formato.dart';
 import '../../dominio/precios.dart';
 import '../../sincronizacion/sesion.dart';
@@ -79,7 +80,7 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
         PasoTexto(
           pregunta: '¿Cómo se llama el producto?',
           ayuda: 'El nombre con el que usted lo reconoce. Si tiene tamaños, inclúyalo en el nombre.',
-          ejemplo: 'Gaseosa 400 ml',
+          ejemplo: negocioActual(context).ejemploProducto,
           etiqueta: 'Nombre del producto',
           controlador: _nombre,
           mayusculas: TextCapitalization.sentences,
@@ -92,7 +93,7 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
         PasoOpciones(
           pregunta: '¿De qué tipo es?',
           ayuda: 'Así lo encuentra rápido al vender, tocando la categoría. Si no sabe, deje este paso sin elegir.',
-          opciones: Categorias.todas,
+          opciones: Categorias.para(negocioActual(context).nombre),
           valor: () => _categoria,
           alElegir: (c) => setState(() => _categoria = c),
           opcional: true,
@@ -126,7 +127,8 @@ class _PantallaNuevoProductoState extends State<PantallaNuevoProducto> {
         ),
         PasoOpciones(
           pregunta: '¿Quiere que la app le cuente cuántos le quedan?',
-          ayuda: 'Si dice que sí, cada venta descuenta y cada pedido que llega suma. Le avisa cuando se esté acabando.',
+          ayuda: 'Si dice que sí, cada venta descuenta y cada pedido que llega suma. Le avisa cuando se esté acabando. '
+              'Si es un servicio (un corte, una reparación, una instalación), elija No: no lleva cantidad.',
           opciones: const [_si, _no],
           valor: () => _llevaCuenta,
           alElegir: (o) => setState(() => _llevaCuenta = o),

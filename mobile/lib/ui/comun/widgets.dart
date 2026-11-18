@@ -259,7 +259,7 @@ class NavFlotante extends StatelessWidget {
 
   static const _items = [
     (Icons.home_outlined, 'Inicio'),
-    (Icons.people_outline, 'Le deben'),
+    (Icons.people_outline, 'Deudas'),
     (Icons.bar_chart, 'Resumen'),
     (Icons.tune, 'Ajustes'),
   ];

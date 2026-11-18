@@ -4,9 +4,9 @@ Caporal se prueba en tres niveles:
 
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
-| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 52 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 94 |
-| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 19 |
+| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 51 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 105 |
+| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 21 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
 
@@ -64,6 +64,10 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `vender un producto sin control de cantidad no crea movimientos de inventario` | `inventario_test.dart` | Productos sin cuenta |
 | `muestra cada producto con su cantidad, subtotal y el total` | `lista_venta_test.dart` | Lista de la venta con varios productos |
 | `busca sin importar tildes ni mayúsculas, por nombre o categoría` | `buscar_productos_test.dart` | Búsqueda |
+| `un pedido fiado suma al inventario, queda en Le debo y no cuenta como gasto` / `pagarle al proveedor baja la deuda y sí cuenta como gasto` / `un pedido fiado que ya se empezó a pagar no se corrige directamente` / `los proveedores usados se ofrecen…` | `proveedores_test.dart` | Proveedores (CU-17) |
+| `al restaurar guarda pedidos fiados y pagos, e ignora tipos que esta versión no conoce` | `proveedores_test.dart` | Compatibilidad entre versiones |
+| `Gasté → Pedido → "Me lo fiaron" pide el proveedor…` / `pagarle al proveedor abre con lo que se le debe` | `proveedores_test.dart` | Pantallas de proveedor |
+| `cada negocio tiene sus categorías, sus gastos y su ganancia recomendada` y 3 más | `tipos_de_negocio_test.dart` | Tipo de negocio |
 | `al vender, el buscador y las categorías filtran los productos` | `buscar_productos_test.dart` | Buscador y categorías en pantalla |
 | `un gasto de pedido suma lo que llegó y queda como gasto` | `pedido_test.dart` | Pedido suma inventario |
 | `si llega pedido de un producto sin cuenta, empieza a llevarla` | `pedido_test.dart` | Activa el conteo |
@@ -169,6 +173,7 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `con el costo escrito, sugiere el precio para ganar lo elegido y lo deja escrito` | `nuevo_producto_costo_test.dart` | Producto nuevo |
 | `al llegar mercancía más cara, avisa que gana menos y ofrece subir el precio` | `pedido_costo_test.dart` | Pedido |
 | `unaAppAnteriorSinCostoNoBorraElCostoGuardado` / `elCostoMasRecienteGana` / `elMargenDelNegocioSeGuardaEnElPerfil` / `laCategoriaSeGuardaYUnEnvioSinCategoriaNoLaBorra` | `CostoTest` | Servidor |
+| `unPedidoFiadoYSuPagoSeGuardanYVuelvenAlRestaurar` | `ProveedoresTest` | Servidor (CU-17) |
 
 ### CU-15: borrar mis datos
 
@@ -207,6 +212,8 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-17 | Cuenta sin Internet (CU-01) | Modo avión → Crear mi cuenta → anotar una venta → quitar modo avión | Funciona sin señal; al volver la señal la cuenta se crea y la venta queda "Enviado" |
 | PM-18 | Otra cuenta (CU-01, CU-02) | Cerrar sesión → crear otra cuenta en el mismo celular | Avisa que hay datos de otra cuenta y los quita; la cuenta nueva empieza vacía |
 | PM-19 | Buscar al vender (CU-04) | Crear productos con categoría → Vendí → escribir "cafe" y tocar una categoría | Filtra al escribir, sin importar tildes; la categoría muestra solo sus productos |
+| PM-20 | Pedido fiado y pago (CU-17) | Gasté → Pedido → productos → "Me lo fiaron" → proveedor → valor → Anotar; luego Deudas → Le debo → proveedor → Ya le pagué | El inventario sube; el gasto de hoy no cambia; Le debo y el inicio muestran la deuda; al pagar baja la deuda y sube el gasto. En modo avión funciona igual |
+| PM-21 | Otro tipo de negocio (CU-01, CU-14) | Mi negocio → Restaurante → Guardar; crear un producto y anotar un gasto | Las categorías son de restaurante (Platos, Bebidas…); los gastos incluyen Gas; la ganancia recomendada es 60 % |
 | PM-15 | Fiado ya pagado (CU-11) | Fiar → registrar el pago → intentar corregir el fiado | Avisa "Primero corrija el pago" y no deja corregir |
 | PM-11 | Lector de pantalla | Activar VoiceOver (iOS) o TalkBack (Android) y recorrer inicio, Vendí y Le deben | Cada zona tocable se anuncia como botón con nombre; los chips dicen si están elegidos |
 | PM-14 | Huella (CU-03) | Crear PIN → activar Huella o Face ID → cerrar y abrir la app | Pide la huella o la cara y abre sin PIN; si se cancela, deja escribir el PIN |

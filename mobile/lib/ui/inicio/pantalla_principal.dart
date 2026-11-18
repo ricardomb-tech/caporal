@@ -17,13 +17,27 @@ class PantallaPrincipal extends StatefulWidget {
 class _PantallaPrincipalState extends State<PantallaPrincipal> {
   int _actual = 0;
 
+  /// En la pestaña Deudas: false muestra "Le deben"; true, "Le debo".
+  final _verDebo = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _verDebo.dispose();
+    super.dispose();
+  }
+
+  void _verDeudas({bool debo = false}) => setState(() {
+        _verDebo.value = debo;
+        _actual = 1;
+      });
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
       body: IndexedStack(index: _actual, children: [
-        PantallaInicio(verDeudores: () => setState(() => _actual = 1)),
-        const PantallaDeudores(),
+        PantallaInicio(verDeudores: _verDeudas),
+        PantallaDeudores(verDebo: _verDebo),
         const PantallaResumen(),
         const PantallaAjustes(),
       ]),

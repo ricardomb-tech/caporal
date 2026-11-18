@@ -73,9 +73,11 @@ class PantallaDetalle extends StatelessWidget {
     final repo = context.watch<Repositorio>();
     final f = movimiento.creadoEn.toLocal();
     final esReverso = movimiento.reversoDe != null;
-    final color = movimiento.tipo == TipoMovimiento.gasto
+    final t = movimiento.tipo;
+    final color = t.salePlata
         ? Colores.rojo
-        : (movimiento.tipo == TipoMovimiento.fiado ? Colores.ambarTexto : Colores.verde);
+        : ((t == TipoMovimiento.fiado || t == TipoMovimiento.compra) ? Colores.ambarTexto : Colores.verde);
+    final conProveedor = t == TipoMovimiento.gasto || t == TipoMovimiento.compra || t == TipoMovimiento.pago;
     return FutureBuilder<(bool, bool)>(
       future: () async {
         final corregido = await repo.yaCorregido(movimiento.id);
@@ -93,7 +95,10 @@ class PantallaDetalle extends StatelessWidget {
           ),
           if (movimiento.medioPago != null) ('Forma de pago', nombreFormaDePago(movimiento.medioPago), null),
           if (movimiento.referencia != null) ('Comprobante', movimiento.referencia!, null),
-          ('Cliente', movimiento.clienteNombre ?? 'Sin cliente', null),
+          if (conProveedor && movimiento.clienteNombre != null)
+            ('Proveedor', movimiento.clienteNombre!, null)
+          else if (!conProveedor)
+            ('Cliente', movimiento.clienteNombre ?? 'Sin cliente', null),
           ('Envío', pendiente ? 'Pendiente' : 'Enviado', pendiente ? Colores.ambarTexto : null),
         ];
         return Pantalla(

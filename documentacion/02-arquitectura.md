@@ -74,7 +74,7 @@ mobile/lib/
 ├── main.dart               arranque: abre la base cifrada y conecta las piezas
 ├── config.dart             dirección de la API y número de soporte (por --dart-define)
 ├── dominio/                modelos y reglas puras: Movimiento, Producto, resúmenes, reglas de cobro,
-│                           formato de pesos
+│                           tipos de negocio, categorías, precios, formato de pesos
 ├── datos/                  base local (SQLCipher, migraciones), cola de salida, Repositorio,
 │                           Inventario, Clientes, Comprobantes
 ├── sincronizacion/         Sesion (tokens en Keychain/Keystore), Sincronizador, envíos por tipo,
@@ -84,7 +84,8 @@ mobile/lib/
     ├── inicio/             splash, bienvenida, navegación y pantalla de inicio
     ├── cuenta/             ingreso, registro, PIN, recuperar clave
     ├── anotar/             Vendí, Gasté, Fié, lista de la venta, pedido, confirmación
-    ├── clientes/           Le deben, cliente, cobrar por WhatsApp, registrar pago y comprobante
+    ├── clientes/           Deudas (Le deben y Le debo), cliente, cobrar por WhatsApp, registrar pago y comprobante
+    ├── proveedores/        un proveedor: lo que se le debe, pagarle e historial
     ├── inventario/         inventario, producto, nuevo producto, cantidades
     ├── movimientos/        historial, detalle y corrección, resumen
     └── ajustes/            mis datos, mi negocio, privacidad, estado de envío, ayuda

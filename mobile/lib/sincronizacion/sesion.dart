@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../config.dart';
 import '../dominio/precios.dart';
+import '../dominio/tipos_de_negocio.dart';
 import 'renovador_sesion.dart';
 
 /// Sesión del negocio y datos del perfil. Todo vive en el almacén seguro del sistema
@@ -251,6 +252,8 @@ class Sesion extends ChangeNotifier {
     this.nombrePersona = nombrePersona;
     this.correo = (correo == null || correo.isEmpty) ? null : correo;
     this.tipoNegocio = tipoNegocio;
+    // Cuánto se suele ganar depende del negocio: un restaurante no gana lo mismo que una tienda.
+    margen = TiposDeNegocio.de(tipoNegocio).margenRecomendado;
     this.compartirCifras = compartirCifras;
     await _guardarPerfil();
     await _perfilCambiado(); // nombre, correo y tipo de negocio viajan en el primer envío

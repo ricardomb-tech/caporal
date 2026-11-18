@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../dominio/precios.dart';
+import '../../dominio/tipos_de_negocio.dart';
 import '../../sincronizacion/sesion.dart';
 import '../comun/formulario_guiado.dart';
 import '../cuenta/pantalla_registro.dart';
@@ -21,7 +21,15 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
   late String? _tipo = context.read<Sesion>().tipoNegocio;
   late String? _margen = _etiquetaMargen(context.read<Sesion>().margen);
 
-  static String _etiquetaMargen(int m) => m == Precios.margenRecomendado ? '$m % (recomendado)' : '$m %';
+  TipoDeNegocio get _negocio => TiposDeNegocio.de(_tipo);
+
+  String _etiquetaMargen(int m) => m == _negocio.margenRecomendado ? '$m % (recomendado)' : '$m %';
+
+  /// Las del tipo de negocio y, si eligió otra antes, también esa.
+  List<int> get _margenes {
+    final actual = context.read<Sesion>().margen;
+    return [..._negocio.margenes, if (!_negocio.margenes.contains(actual)) actual];
+  }
 
   Future<String?> _guardar() async {
     final sesion = context.read<Sesion>();
@@ -40,7 +48,7 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
         PasoTexto(
           pregunta: '¿Cómo se llama su negocio?',
           ayuda: 'El nombre con el que lo conocen sus clientes. Aparece en los recordatorios de cobro.',
-          ejemplo: 'Tienda La Esperanza',
+          ejemplo: _negocio.ejemploNegocio,
           etiqueta: 'Nombre del negocio',
           controlador: _nombre,
           mayusculas: TextCapitalization.words,
@@ -51,7 +59,12 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
           ayuda: 'Elija el que más se parezca.',
           opciones: PantallaRegistroTipos.tipos,
           valor: () => _tipo,
-          alElegir: (t) => _tipo = t,
+          // Al cambiar de tipo, se propone la ganancia recomendada para ese negocio (la puede cambiar después).
+          alElegir: (t) => setState(() {
+            if (t == _tipo) return;
+            _tipo = t;
+            _margen = _etiquetaMargen(_negocio.margenRecomendado);
+          }),
         ),
         PasoTexto(
           pregunta: '¿En qué municipio está?',
@@ -64,8 +77,9 @@ class _PantallaMiNegocioState extends State<PantallaMiNegocio> {
         PasoOpciones(
           pregunta: '¿Cuánto le quiere ganar en cada producto?',
           ayuda: 'Es lo que le suma a lo que pagó para sacar el precio de venta. Si algo le cuesta \$ 2.000 y elige '
-              '25 %, la app le sugiere venderlo a \$ 2.500: gana \$ 500. En tienda se usa entre 15 % y 30 %.',
-          opciones: [for (final m in Precios.margenes) _etiquetaMargen(m)],
+              '25 %, la app le sugiere venderlo a \$ 2.500: gana \$ 500. Para ${_negocio.nombre.toLowerCase()} le '
+              'recomendamos ${_negocio.margenRecomendado} %.',
+          opciones: [for (final m in _margenes) _etiquetaMargen(m)],
           valor: () => _margen,
           alElegir: (m) => _margen = m,
         ),

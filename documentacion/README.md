@@ -1,6 +1,6 @@
 # Documentación de Caporal
 
-Caporal es la app de cuentas para micronegocios de Casanare: ventas, gastos, fiados, cobro, pagos e inventario, con o sin señal. Esta carpeta reúne todo lo que hace falta para entenderla, probarla, operarla y evaluarla.
+Caporal es la app de cuentas para micronegocios de Casanare (tiendas, restaurantes, talleres, peluquerías y más): ventas, gastos, fiados, cobro, pagos, proveedores e inventario, con o sin señal. Esta carpeta reúne todo lo que hace falta para entenderla, probarla, operarla y evaluarla.
 
 | # | Documento | Para qué sirve |
 |---|---|---|
@@ -11,8 +11,9 @@ Caporal es la app de cuentas para micronegocios de Casanare: ventas, gastos, fia
 | 5 | [API](05-api.md) | Cada servicio: qué recibe, qué responde y sus errores |
 | 6 | [Casos de prueba](06-casos-de-prueba.md) | Pruebas automáticas por caso de uso y pruebas manuales para la demo |
 | 7 | [Despliegue y operación](07-despliegue-y-operacion.md) | Cómo instalar, actualizar, respaldar y vigilar |
-| 8 | [Decisiones de arquitectura (ADR)](decisiones-de-arquitectura.md) | Por qué se decidió cada cosa importante |
-| 9 | [Seguridad](seguridad/) | Auditoría de 27 controles, políticas, riesgos e incidentes |
+| 8 | [Estado y pendientes](08-estado-y-pendientes.md) | Qué está hecho, qué falta, qué hay que probar y qué funciona sin Internet |
+| 9 | [Decisiones de arquitectura (ADR)](decisiones-de-arquitectura.md) | Por qué se decidió cada cosa importante |
+| 10 | [Seguridad](seguridad/) | Auditoría de 27 controles, políticas, riesgos e incidentes |
 
 ## Requisitos de la convocatoria y dónde se cumplen
 
