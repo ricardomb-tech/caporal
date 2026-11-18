@@ -1,6 +1,6 @@
-import 'package:caporal/data/movimiento.dart';
-import 'package:caporal/formato.dart';
-import 'package:caporal/ui/pantalla_historial.dart';
+import 'package:caporal/dominio/movimiento.dart';
+import 'package:caporal/dominio/formato.dart';
+import 'package:caporal/ui/movimientos/pantalla_historial.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

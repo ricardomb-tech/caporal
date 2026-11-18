@@ -6,10 +6,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import co.caporal.api.auth.UsuarioRepository;
-import co.caporal.api.catalogo.MovInventarioRepository;
-import co.caporal.api.catalogo.Producto;
-import co.caporal.api.catalogo.ProductoRepository;
+import co.caporal.api.cuenta.datos.UsuarioRepository;
+import co.caporal.api.catalogo.datos.MovInventarioRepository;
+import co.caporal.api.catalogo.dominio.Producto;
+import co.caporal.api.catalogo.datos.ProductoRepository;
 import tools.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;

@@ -8,8 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import co.caporal.api.auth.Usuario;
-import co.caporal.api.auth.UsuarioRepository;
+import co.caporal.api.cuenta.dominio.Usuario;
+import co.caporal.api.cuenta.datos.UsuarioRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,5 +1,5 @@
-import 'package:caporal/data/cobro.dart';
-import 'package:caporal/data/movimiento.dart';
+import 'package:caporal/dominio/reglas_cobro.dart';
+import 'package:caporal/dominio/movimiento.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Movimiento _mov(String id, TipoMovimiento tipo, DateTime cuando, {String? reversoDe}) => Movimiento(

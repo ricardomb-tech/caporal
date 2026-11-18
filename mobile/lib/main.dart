@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
-import 'data/base_local.dart';
-import 'data/clientes.dart';
-import 'data/comprobantes.dart';
-import 'data/cola_salida.dart';
-import 'data/inventario.dart';
-import 'data/repositorio.dart';
-import 'sync/sesion.dart';
-import 'sync/sincronizador.dart';
-import 'ui/pantalla_ingreso.dart';
-import 'ui/pantalla_bienvenida.dart';
-import 'ui/pantalla_splash.dart';
-import 'ui/pantalla_pin.dart';
-import 'ui/pantalla_principal.dart';
-import 'ui/tema.dart';
+import 'datos/base_local.dart';
+import 'datos/clientes.dart';
+import 'datos/comprobantes.dart';
+import 'datos/cola_salida.dart';
+import 'datos/inventario.dart';
+import 'datos/repositorio.dart';
+import 'sincronizacion/sesion.dart';
+import 'sincronizacion/sincronizador.dart';
+import 'ui/cuenta/pantalla_ingreso.dart';
+import 'ui/inicio/pantalla_bienvenida.dart';
+import 'ui/inicio/pantalla_splash.dart';
+import 'ui/cuenta/pantalla_pin.dart';
+import 'ui/inicio/pantalla_principal.dart';
+import 'ui/comun/tema.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

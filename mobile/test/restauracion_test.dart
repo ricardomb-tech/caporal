@@ -1,10 +1,10 @@
-import 'package:caporal/data/base_local.dart';
-import 'package:caporal/data/cola_salida.dart';
-import 'package:caporal/data/inventario.dart';
-import 'package:caporal/data/movimiento.dart';
-import 'package:caporal/data/repositorio.dart';
-import 'package:caporal/sync/cliente_api.dart';
-import 'package:caporal/sync/restauracion.dart';
+import 'package:caporal/datos/base_local.dart';
+import 'package:caporal/datos/cola_salida.dart';
+import 'package:caporal/datos/inventario.dart';
+import 'package:caporal/dominio/movimiento.dart';
+import 'package:caporal/datos/repositorio.dart';
+import 'package:caporal/sincronizacion/cliente_api.dart';
+import 'package:caporal/sincronizacion/restauracion.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 

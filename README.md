@@ -10,10 +10,10 @@ Proyecto de la convocatoria CreaTIC Casanare (Gobernación de Casanare, 2026). E
 |---|---|---|
 | Multiplataforma | Una sola app en Flutter para Android e iOS | `mobile/` |
 | Compatibilidad | Android 12 (API 31) o superior; iOS 16 o superior | `mobile/android/app/build.gradle.kts` (`minSdk = 31`), `mobile/ios/Podfile` |
-| Modo offline | Base local cifrada (SQLCipher), cola de salida única, reintentos idempotentes y restauración completa al reinstalar o cambiar de celular | `mobile/lib/data/`, `mobile/lib/sync/`, ADR-06 en `docs/arquitectura.md` |
-| Seguridad | HTTPS con TLS 1.2 o 1.3, claves con Argon2id, sesión corta con renovación revocable, aislamiento por negocio, límites de solicitudes, respaldos cifrados | `docs/seguridad/auditoria-2026-11-17.md` |
+| Modo offline | Base local cifrada (SQLCipher), cola de salida única, reintentos idempotentes y restauración completa al reinstalar o cambiar de celular | `mobile/lib/datos/`, `mobile/lib/sincronizacion/`, ADR-06 en `documentacion/decisiones-de-arquitectura.md` |
+| Seguridad | HTTPS con TLS 1.2 o 1.3, claves con Argon2id, sesión corta con renovación revocable, aislamiento por negocio, límites de solicitudes, respaldos cifrados | `documentacion/seguridad/auditoria-2026-11-17.md` |
 | En español y accesible | Toda la interfaz en español de Colombia, formularios guiados con ejemplos, botones grandes y zonas tocables anunciadas al lector de pantalla | `mobile/lib/ui/`, `mobile/test/accesibilidad_test.dart` |
-| Código documentado | Comentarios en el código, decisiones en `docs/`, instrucciones de despliegue, dependencias con licencias permisivas | Este archivo, `deploy/vps/README.md` |
+| Código documentado | Comentarios en el código, decisiones y documentación en `documentacion/`, instrucciones de despliegue, dependencias con licencias permisivas | Este archivo, `deploy/vps/README.md` |
 
 ## Qué hace la app
 
@@ -30,7 +30,7 @@ Proyecto de la convocatoria CreaTIC Casanare (Gobernación de Casanare, 2026). E
 backend/   API Spring Boot 4 (Java 21), PostgreSQL 16, migraciones Flyway
 mobile/    App Flutter (Android e iOS)
 deploy/    Despliegue en un servidor con Docker
-docs/      Arquitectura, decisiones (ADR) y seguridad
+documentacion/  Casos de uso, pruebas, modelo de datos, API, arquitectura y seguridad
 ```
 
 API principal: registro e ingreso (`/api/v1/auth/*`), envío de movimientos (`/api/v1/sync/push`), catálogo e inventario (`/api/v1/sync/catalogo`), respaldo para restaurar (`/api/v1/sync/respaldo`) y borrado de cuenta (`DELETE /api/v1/cuenta`).

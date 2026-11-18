@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:caporal/data/base_local.dart';
-import 'package:caporal/data/cola_salida.dart';
-import 'package:caporal/data/comprobantes.dart';
-import 'package:caporal/data/inventario.dart';
-import 'package:caporal/data/movimiento.dart';
-import 'package:caporal/data/repositorio.dart';
-import 'package:caporal/ui/pantalla_registrar_pago.dart';
+import 'package:caporal/datos/base_local.dart';
+import 'package:caporal/datos/cola_salida.dart';
+import 'package:caporal/datos/comprobantes.dart';
+import 'package:caporal/datos/inventario.dart';
+import 'package:caporal/dominio/movimiento.dart';
+import 'package:caporal/datos/repositorio.dart';
+import 'package:caporal/ui/clientes/pantalla_registrar_pago.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
