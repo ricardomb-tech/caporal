@@ -1,8 +1,18 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Llave de firma de publicación: vive FUERA del repositorio (nunca se sube a GitHub).
+// Por defecto en ~/.caporal/key.properties; otra ruta con la variable CAPORAL_FIRMA_ANDROID.
+// Sin ella, la versión release se firma con la llave de pruebas y lo advierte.
+val archivoFirma = file(System.getenv("CAPORAL_FIRMA_ANDROID") ?: "${System.getProperty("user.home")}/.caporal/key.properties")
+val firma = Properties().apply { if (archivoFirma.exists()) FileInputStream(archivoFirma).use { load(it) } }
+val hayFirma = archivoFirma.exists()
 
 android {
     namespace = "co.caporal.caporal"
@@ -15,7 +25,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "co.caporal.caporal"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -29,11 +38,25 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hayFirma) {
+            create("publicacion") {
+                storeFile = file(firma.getProperty("storeFile"))
+                storePassword = firma.getProperty("storePassword")
+                keyAlias = firma.getProperty("keyAlias")
+                keyPassword = firma.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (hayFirma) {
+                signingConfig = signingConfigs.getByName("publicacion")
+            } else {
+                logger.warn("Caporal: no se encontró la llave de firma; la APK release queda firmada con la llave de PRUEBAS.")
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 }

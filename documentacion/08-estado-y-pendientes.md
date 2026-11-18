@@ -91,13 +91,31 @@ Conclusión: todo lo del día a día funciona sin Internet. Solo necesitan seña
 
 Pruebas automáticas hoy: **51 del servidor y 105 de la app**, todas pasan.
 
-## 4. Pendientes del equipo 👤
+## 4. Seguridad: qué falta
+
+Hecho y verificado: los 10 controles de la convocatoria ([controles](seguridad/controles.md)). De los 27 de la [auditoría](seguridad/auditoria-2026-11-17.md), todos los que aplican quedaron en OK menos dos que dependen del equipo: rotar el token de Twilio y el acceso de root por SSH en el servidor compartido. El 18 de noviembre también se agregó: APK firmada con llave propia, código ofuscado y Android sin respaldar los datos de la app en la nube de Google.
+
+| Pendiente | Riesgo | Quién |
+|---|---|---|
+| **Guardar una copia de la llave de firma de Android** (`~/.caporal/caporal-subida.jks` y `key.properties`) y de la llave de respaldos en un gestor de contraseñas | Alto: si se pierde el computador, no se pueden publicar actualizaciones con la misma firma | 👤 |
+| Rotar el token de Twilio (ya no se usa, pero existió) | Medio | 👤 |
+| Desbloquear la facturación de GitHub: activa CI, Gitleaks y Trivy automáticos; después proteger la rama `main` con revisión | Medio | 👤 |
+| Destino de alertas de seguridad y caídas (`ALERTA_WEBHOOK`) | Medio | 👤 |
+| Actualizar Docker y reiniciar el servidor (lo comparte otro proyecto) | Medio | 👤 en ventana de mantenimiento |
+| Dominio propio en vez de `sslip.io` | Medio | 👤 |
+| En iPhone, las fotos de comprobantes entran en la copia de iCloud del dueño | Bajo: es el iCloud del mismo dueño, cifrado por Apple | ⏳ excluirlas con código nativo |
+| Fijar el certificado del servidor en la app (*certificate pinning*) | Bajo | ⏳ opcional; hay que planear la renovación del certificado |
+| Ocultar las cifras en la vista de apps recientes | Bajo | ⏳ opcional |
+| Root sigue entrando por SSH con llave (servidor compartido) | Bajo, aceptado (R7) | 👤 al tener servidor propio |
+| Documentos de gobierno en borrador: personas y formación, contrato del VPS | Bajo para el reto; necesario para una certificación real | 👤 |
+
+## 5. Pendientes del equipo 👤
 
 | Pendiente | Para cuándo |
 |---|---|
 | Correo de contacto en la política de privacidad | Antes de publicar en tiendas |
 | Licencia del código (recomendada Apache 2.0) | Antes de la entrega final |
-| Llave de firma propia de Android y cuenta de Google Play | Antes de publicar en Google Play |
+| Cuenta de Google Play Console (la llave de firma propia ya existe) | Antes de publicar en Google Play |
 | Cuenta de Apple a nombre del equipo (hoy está en la de JDS) | Antes de publicar en App Store |
 | Desbloquear la facturación de GitHub (la integración continua no corre) | Cuando se pueda |
 | Rotar el token de Twilio que ya no se usa | Pronto |
@@ -109,6 +127,6 @@ Pruebas automáticas hoy: **51 del servidor y 105 de la app**, todas pasan.
 | Dependencias pendientes: #8 y #10 necesitan cambios de código; cerrar #2 (Java 26); #1 con Java 25; #3, #5 y #6 cuando corra la integración continua | Después de la demo |
 | Video cinematográfico del pitch ("Del cuaderno a la app") | En pausa: faltan la música, la foto del cuaderno y la frase final |
 
-## 5. Recomendación para la demo de mañana
+## 6. Recomendación para la demo de mañana
 
 Usar la **versión 9** (estable y probada). La versión con proveedores y tipos de negocio puede contarse en el pitch como lo que viene ("Caporal sirve para cualquier micronegocio y ya maneja lo que le debe a sus proveedores"), pero conviene publicarla después de probar PM-20 y PM-21 en un celular.

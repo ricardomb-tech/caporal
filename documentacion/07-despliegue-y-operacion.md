@@ -24,7 +24,7 @@ En local basta `docker compose up --build` en la raíz (ver el [README principal
 
 | Plataforma | Mínimo | Compilar | Publicar |
 |---|---|---|---|
-| Android | 12 (API 31) | `flutter build apk --release --dart-define=API_URL=<api>` para instalar a mano; `flutter build appbundle ...` para Google Play | Falta la llave de firma propia (hoy se firma con la de pruebas) y la cuenta de Google Play Console |
+| Android | 12 (API 31) | `flutter build apk --release --obfuscate --split-debug-info=~/.caporal/simbolos/<versión> --dart-define=API_URL=<api>` para instalar a mano; `flutter build appbundle ...` (mismas opciones) para Google Play | Firmada con la llave propia del equipo (`~/.caporal/key.properties`, fuera del repositorio; otra ruta con `CAPORAL_FIRMA_ANDROID`). Sin esa llave, Gradle avisa y firma con la de pruebas. Falta la cuenta de Google Play Console |
 | iOS | 16.0 | `flutter build ios --release --dart-define=API_URL=<api>` y archivar en Xcode | Subida a App Store Connect como "Caporal Casanare" para TestFlight; incluye el manifiesto de privacidad `PrivacyInfo.xcprivacy` |
 
 Variables al compilar: `API_URL` (dirección de la API) y `SOPORTE_WHATSAPP` (número de soporte de Ayuda).
