@@ -80,7 +80,7 @@ class _PantallaAceptarTerminosState extends State<PantallaAceptarTerminos> {
         _Casilla(
           valor: _datos,
           alCambiar: (v) => setState(() => _datos = v),
-          texto: 'Autorizo el tratamiento de mis datos personales (Ley 1581 de 2012)',
+          texto: autorizacionDatos,
           enlace: 'Leer la política de datos',
           alLeer: () => _leer(PantallaTexto.politica()),
         ),

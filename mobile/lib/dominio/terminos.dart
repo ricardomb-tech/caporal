@@ -4,6 +4,20 @@
 /// Borrador para revisión jurídica antes de publicar en las tiendas.
 const versionTerminos = '2026-11-18';
 
+/// Aviso de privacidad de la pantalla de registro: texto modelo de la Convocatoria CreaTIC Casanare 2026
+/// (Formatos Modelo de Protección de Datos, Sección A), tal cual. Va con una casilla SIN marcar.
+const avisoPrivacidad = 'AVISO DE PRIVACIDAD: En cumplimiento de la Ley 1581 de 2012 y el Decreto 1074 de 2015, le '
+    'informamos que los datos personales suministrados serán tratados para gestionar su registro, operación '
+    'comercial, inventario, ventas, pedidos y contacto dentro de esta aplicación. Frente a los datos de clientes '
+    'finales registrados por los comercios, la MiPyme usuaria actúa como Responsable del Tratamiento y la '
+    'Gobernación de Casanare, como operadora de la plataforma, actúa como Encargada del Tratamiento. Usted puede '
+    'ejercer sus derechos a conocer, actualizar, rectificar y suprimir sus datos, así como consultar nuestra '
+    'Política de Tratamiento de Datos Personales directamente en esta aplicación.';
+
+/// La autorización de la casilla, con las palabras del formato modelo.
+const autorizacionDatos = 'He leído el Aviso de Privacidad y autorizo de manera previa, expresa e informada el '
+    'tratamiento de mis datos personales conforme a la Política de Tratamiento de Datos Personales.';
+
 /// Lo esencial en una frase por punto, para la pantalla de aceptación.
 const resumenTerminos = <(String, String)>[
   ('Qué es Caporal', 'Una app gratuita para llevar las cuentas de su negocio, con o sin señal.'),

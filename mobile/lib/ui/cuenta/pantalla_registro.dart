@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../dominio/reglas_clave.dart';
+import '../../dominio/terminos.dart';
 import '../../dominio/tipos_de_negocio.dart';
 import '../../sincronizacion/sesion.dart';
+import 'pantalla_terminos.dart';
 import 'preparar_cuenta.dart';
 import '../comun/formulario_guiado.dart';
 import '../comun/tema.dart';
@@ -131,18 +133,20 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         ),
         PasoContenido(
           pregunta: 'Sus datos, en sus manos',
-          ayuda: 'Lea qué guardamos y para qué. Para crear la cuenta necesitamos su autorización.',
+          ayuda: 'Lea el aviso de privacidad. Para crear la cuenta necesitamos su autorización.',
           validador: () => _acepta ? null : 'Para crear la cuenta marque que autoriza el tratamiento de sus datos.',
           contenido: (context, alCambiar) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Tarjeta(
-              hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _Punto('Qué guardamos',
-                    'Su celular, los datos de su negocio (con su llave Bre-B), su nombre y correo si los da, y sus anotaciones.'),
-                _Punto('Para qué', 'Para guardar su copia de seguridad y mostrarle sus cuentas.'),
-                _Punto('Quién responde',
-                    'Su negocio es el responsable; la Gobernación de Casanare es la encargada del tratamiento.'),
-                _Punto('Sus derechos', 'Conocer, corregir y borrar sus datos cuando quiera (Ley 1581 de 2012).'),
-              ]),
+              hijo: Text(avisoPrivacidad, style: TextStyle(fontSize: 14, height: 1.45, color: Colores.texto)),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.description_outlined, size: 18),
+                label: const Text('Leer la Política de Tratamiento de Datos Personales'),
+                // Está dentro de la app: se lee sin Internet.
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PantallaTexto.politica())),
+              ),
             ),
             CheckboxListTile(
               value: _acepta,
@@ -152,7 +156,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
               }),
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('Autorizo el tratamiento de mis datos personales'),
+              title: const Text(autorizacionDatos, style: TextStyle(fontSize: 14)),
             ),
             CheckboxListTile(
               value: _cifras,
@@ -168,21 +172,6 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   @override
   Widget build(BuildContext context) =>
       FormularioGuiado(titulo: 'Crear mi cuenta', pasos: _pasos, textoFinal: 'Crear mi cuenta', alTerminar: _crear);
-}
-
-class _Punto extends StatelessWidget {
-  final String titulo;
-  final String texto;
-  const _Punto(this.titulo, this.texto);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(titulo, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colores.verde)),
-          Text(texto, style: const TextStyle(fontSize: 14, color: Colores.texto)),
-        ]),
-      );
 }
 
 /// Lo que debe tener la clave, con un ✓ verde en cada cosa que ya cumple mientras escribe.

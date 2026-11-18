@@ -82,16 +82,17 @@ void main() {
     FilledButton boton() => t.widget<FilledButton>(find.widgetWithText(FilledButton, 'Aceptar y seguir'));
     expect(find.text('Antes de empezar'), findsOneWidget);
     expect(boton().onPressed, isNull);
-    Future<void> marcar(int i) async {
-      await t.ensureVisible(find.byType(Checkbox).at(i));
-      await t.pumpAndSettle();
-      await t.tap(find.byType(Checkbox).at(i));
+    // Cada casilla se busca por su texto (la lista solo arma lo que está en pantalla) y se marca.
+    Future<void> marcar(String texto) async {
+      final casilla = find.widgetWithText(CheckboxListTile, texto, skipOffstage: false);
+      await t.scrollUntilVisible(casilla, 120, scrollable: find.byType(Scrollable).first);
+      t.widget<CheckboxListTile>(casilla).onChanged!(true);
       await t.pump();
     }
 
-    await marcar(0);
+    await marcar('Acepto los Términos y condiciones');
     expect(boton().onPressed, isNull, reason: 'Falta autorizar los datos');
-    await marcar(1);
+    await marcar(autorizacionDatos);
     expect(boton().onPressed, isNotNull);
     await t.runAsync(() async {
       await t.tap(find.text('Aceptar y seguir'));

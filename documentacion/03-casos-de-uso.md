@@ -46,7 +46,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
   1. Escribe su nombre, celular (10 números, empieza por 3) y, si quiere, su correo.
   2. Escribe el nombre del negocio, elige el tipo (Tienda, Restaurante, Taller, Peluquería, Ropa, Droguería, Ambulante, Servicios u Otro) y el municipio. El tipo adapta la app: categorías de productos, gastos frecuentes, ganancia recomendada y ejemplos.
   3. Crea una clave de mínimo 8 caracteres con **mayúscula, minúscula, número y símbolo**; una lista se marca con ✓ mientras escribe y el ojo deja ver lo escrito. No se aceptan claves fáciles de adivinar (su celular, una fecha, 6 números seguidos, las más usadas). La escribe dos veces.
-  4. Lee qué se guarda y para qué, y marca que autoriza el tratamiento de sus datos (Ley 1581).
+  4. Lee el **Aviso de privacidad** con el texto modelo de la convocatoria (Ley 1581 de 2012 y Decreto 1074 de 2015) y puede abrir la Política de Tratamiento de Datos Personales, que está dentro de la app y se lee sin Internet. Marca la casilla, que empieza sin marcar: "He leído el Aviso de Privacidad y autorizo de manera previa, expresa e informada el tratamiento de mis datos personales conforme a la Política de Tratamiento de Datos Personales".
   5. Pulsa "Crear mi cuenta": el servidor crea la cuenta y abre la sesión.
 - **Alternativas:** el correo y el permiso de compartir cifras anónimas son opcionales.
 - **Sin Internet:** la cuenta queda creada en el celular y se puede trabajar de una vez; el inicio dice "Su cuenta se termina de crear cuando tenga Internet". Al volver la señal, la app la crea en el servidor y envía todo lo anotado. La clave espera cifrada en el almacén seguro del sistema solo hasta ese envío.
@@ -197,7 +197,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 - **Actor:** dueño. **Cuándo:** la primera vez que abre la app (después de las tres pantallas de bienvenida) y cada vez que cambian los términos. No necesita Internet.
 - **Flujo principal:**
   1. La pantalla "Antes de empezar" resume en cuatro puntos qué es Caporal y qué se hace con sus datos.
-  2. Marca **"Acepto los Términos y condiciones"** y **"Autorizo el tratamiento de mis datos personales (Ley 1581 de 2012)"**; cada una tiene un enlace para leer el texto completo. Sin las dos no puede seguir.
+  2. Marca **"Acepto los Términos y condiciones"** y la autorización de datos con las palabras del formato modelo (**"He leído el Aviso de Privacidad y autorizo de manera previa, expresa e informada…"**); cada una tiene un enlace para leer el texto completo. Sin las dos no puede seguir.
   3. Opcional: **"Quiero recibir avisos en este celular"** (marcado). Al tocar "Aceptar y seguir", el sistema pide el permiso de notificaciones; si lo niega, la app sigue igual.
 - **Avisos** (Ajustes → Avisos, cada uno se puede apagar): cobros de más de 15 días (9 a. m.), productos con 3 o menos unidades (8 a. m.), pedidos fiados de más de 8 días (9:30 a. m.), anotaciones sin copia de seguridad de más de 2 días (10 a. m.) y el cierre del día (7:30 p. m.). Salen entre las 8 a. m. y las 7:30 p. m.
 - **Reglas:**
