@@ -143,7 +143,11 @@ class _EstadoSenal extends StatelessWidget {
         ),
       );
     }
-    if (!sync.conSenal) {
+    if (sync.restaurando) {
+      texto = 'Trayendo sus datos guardados…';
+      fondo = Colores.verdeClaro;
+      color = Colores.verde;
+    } else if (!sync.conSenal) {
       texto = 'Sin señal · todo queda guardado en su celular';
       fondo = Colores.ambarClaro;
       color = Colores.ambarTexto;

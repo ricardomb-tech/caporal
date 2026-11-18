@@ -19,6 +19,7 @@ class Sesion extends ChangeNotifier {
   static const _clavePerfil = 'caporal_perfil';
   static const _clavePin = 'caporal_pin';
   static const _claveBienvenida = 'caporal_bienvenida';
+  static const _claveRestaurado = 'caporal_restaurado';
 
   String? token;
   String? _tokenRenovacion;
@@ -36,6 +37,9 @@ class Sesion extends ChangeNotifier {
   bool compartirCifras = false;
 
   bool bienvenidaVista = false;
+
+  /// Si este teléfono ya trajo del servidor los datos de la cuenta (se hace una vez por cuenta).
+  bool restaurado = false;
   bool _tienePin = false;
   bool desbloqueada = false;
 
@@ -50,6 +54,7 @@ class Sesion extends ChangeNotifier {
     _tokenRenovacion = await _almacen.read(key: _claveRenovacion);
     nombreNegocio = await _almacen.read(key: _claveNegocio);
     bienvenidaVista = await _almacen.read(key: _claveBienvenida) == '1';
+    restaurado = await _almacen.read(key: _claveRestaurado) == '1';
     _tienePin = await _almacen.read(key: _clavePin) != null;
     final perfil = await _almacen.read(key: _clavePerfil);
     if (perfil != null) {
@@ -126,6 +131,7 @@ class Sesion extends ChangeNotifier {
       'aceptaDatos': aceptaDatos,
     });
     if (error != null) return error;
+    await marcarRestaurado();
     this.celular = celular;
     this.municipio = municipio;
     this.nombrePersona = nombrePersona;
@@ -135,6 +141,11 @@ class Sesion extends ChangeNotifier {
     await _guardarPerfil();
     notifyListeners();
     return null;
+  }
+
+  Future<void> marcarRestaurado() async {
+    restaurado = true;
+    await _almacen.write(key: _claveRestaurado, value: '1');
   }
 
   Future<String?> ingresar(String celular, String clave) async {
@@ -270,6 +281,9 @@ class Sesion extends ChangeNotifier {
     desbloqueada = false;
     await _almacen.delete(key: _claveToken);
     await _almacen.delete(key: _claveNegocio);
+    // Al entrar de nuevo (quizá con otra cuenta) se vuelve a traer el respaldo.
+    restaurado = false;
+    await _almacen.delete(key: _claveRestaurado);
     notifyListeners();
   }
 

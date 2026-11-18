@@ -76,6 +76,11 @@ public class Producto {
         this.recibidoEn = recibidoEn;
     }
 
+    public CatalogoDtos.ProductoDto aDto() {
+        return new CatalogoDtos.ProductoDto(id, nombre, precio, controlaStock, activo, nombreEn, precioEn, controlaEn,
+                activoEn);
+    }
+
     public UUID getId() { return id; }
     public UUID getUsuarioId() { return usuarioId; }
     public String getNombre() { return nombre; }

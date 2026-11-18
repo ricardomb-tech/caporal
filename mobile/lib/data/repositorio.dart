@@ -38,6 +38,9 @@ class Repositorio extends ChangeNotifier {
   final Inventario inventario;
   Repositorio(this.db, this.dispositivoId, this.cola, this.inventario);
 
+  /// Avisa a las pantallas que los datos cambiaron (por ejemplo, al traer el respaldo).
+  void avisarCambio() => notifyListeners();
+
   /// Guarda el movimiento, aplica al inventario lo vendido o lo que llegó en un pedido, y lo encola, todo en la MISMA transacción:
   /// o queda todo o no queda nada, así no se pierde ni se duplica nada.
   Future<Movimiento> registrar({

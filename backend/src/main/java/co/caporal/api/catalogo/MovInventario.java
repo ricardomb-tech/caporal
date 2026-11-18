@@ -59,6 +59,11 @@ public class MovInventario implements Persistable<UUID> {
     @Override
     public boolean isNew() { return true; }
 
+    public CatalogoDtos.InventarioDto aDto() {
+        return new CatalogoDtos.InventarioDto(id, productoId, delta, motivo, movimientoId, precioUnitario, dispositivoId,
+                creadoEnDispositivo);
+    }
+
     public UUID getUsuarioId() { return usuarioId; }
     public UUID getProductoId() { return productoId; }
     public int getDelta() { return delta; }
