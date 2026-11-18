@@ -23,9 +23,10 @@ flowchart LR
         CU15["CU-15 Exportar o borrar mis datos"]
         CU16["CU-16 Cerrar sesión"]
         CU17["CU-17 Pedido fiado y pago a proveedor"]
+        CU18["CU-18 Aceptar términos y avisos"]
     end
     P(["Proveedor"])
-    D --- CU01 & CU02 & CU03 & CU04 & CU05 & CU06 & CU09 & CU10 & CU11 & CU12 & CU13 & CU14 & CU15 & CU16 & CU17
+    D --- CU01 & CU02 & CU03 & CU04 & CU05 & CU06 & CU09 & CU10 & CU11 & CU12 & CU13 & CU14 & CU15 & CU16 & CU17 & CU18
     CU09 -.-> C
     CU17 -.-> P
     CU07 --- S
@@ -190,3 +191,18 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
   - Se guarda como movimiento `COMPRA` (pedido fiado) o `PAGO` (pago al proveedor); el nombre del proveedor va en `clienteNombre`.
 - **Resultado:** el dueño sabe cuánto le debe a cada proveedor y cuánto le ha pedido en el mes.
 - **Código:** App `ui/anotar/pantalla_registrar.dart`, `ui/anotar/panel_pedido.dart`, `ui/clientes/pantalla_deudores.dart`, `ui/proveedores/pantalla_proveedor.dart`, `datos/repositorio.dart`. API `sincronizacion/dominio/TipoMovimiento`.
+
+## CU-18 Aceptar términos y recibir avisos
+
+- **Actor:** dueño. **Cuándo:** la primera vez que abre la app (después de las tres pantallas de bienvenida) y cada vez que cambian los términos. No necesita Internet.
+- **Flujo principal:**
+  1. La pantalla "Antes de empezar" resume en cuatro puntos qué es Caporal y qué se hace con sus datos.
+  2. Marca **"Acepto los Términos y condiciones"** y **"Autorizo el tratamiento de mis datos personales (Ley 1581 de 2012)"**; cada una tiene un enlace para leer el texto completo. Sin las dos no puede seguir.
+  3. Opcional: **"Quiero recibir avisos en este celular"** (marcado). Al tocar "Aceptar y seguir", el sistema pide el permiso de notificaciones; si lo niega, la app sigue igual.
+- **Avisos** (Ajustes → Avisos, cada uno se puede apagar): cobros de más de 15 días (9 a. m.), productos con 3 o menos unidades (8 a. m.), pedidos fiados de más de 8 días (9:30 a. m.), anotaciones sin copia de seguridad de más de 2 días (10 a. m.) y el cierre del día (7:30 p. m.). Salen entre las 8 a. m. y las 7:30 p. m.
+- **Reglas:**
+  - Los avisos los programa el mismo celular (no hay servidor de notificaciones): funcionan sin Internet y no envían datos a nadie. Se recalculan cada vez que cambian las anotaciones.
+  - Por defecto no muestran nombres ni valores, porque se ven con el celular bloqueado; se puede activar "Mostrar nombres y valores".
+  - La aceptación (versión y fecha) se guarda en el celular y viaja con el perfil como constancia; en el servidor solo avanza, nunca la reemplaza una más vieja. Si se acepta antes de tener cuenta, no se marca el perfil para enviar (un perfil vacío nunca le gana al del servidor).
+  - Si la cuenta ya aceptó esa versión en otro celular, no se vuelve a pedir.
+- **Código:** App `dominio/terminos.dart`, `dominio/avisos.dart`, `avisos/`, `ui/cuenta/pantalla_aceptar_terminos.dart`, `ui/cuenta/pantalla_terminos.dart`, `ui/ajustes/pantalla_avisos.dart`. API `cuenta/dominio/Usuario.aceptarTerminos`, migración `V8__aceptacion_de_terminos.sql`.

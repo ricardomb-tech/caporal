@@ -24,7 +24,10 @@ public final class PerfilDtos {
             @Size(max = 60) String llaveBreB,
             boolean compartirCifras,
             @Min(0) @Max(300) Integer margen,
-            @NotNull Instant modificadoEn) {
+            @NotNull Instant modificadoEn,
+            // Opcionales: la versión de los términos aceptada en el teléfono y cuándo.
+            @Size(max = 20) String terminosVersion,
+            Instant terminosAceptadosEn) {
 
         public Perfil aDominio() {
             return new Perfil(nombreNegocio, municipio, nombrePersona, correo, tipoNegocio, llaveBreB, compartirCifras,
@@ -34,7 +37,8 @@ public final class PerfilDtos {
         /** modificadoEn es null si el teléfono nunca ha enviado el perfil. */
         public static PerfilDto de(Usuario u) {
             return new PerfilDto(u.getNombreNegocio(), u.getMunicipio(), u.getNombrePersona(), u.getCorreo(),
-                    u.getTipoNegocio(), u.getLlaveBreB(), u.isCompartirCifras(), u.getMargen(), u.getPerfilEn());
+                    u.getTipoNegocio(), u.getLlaveBreB(), u.isCompartirCifras(), u.getMargen(), u.getPerfilEn(),
+                    u.getTerminosVersion(), u.getTerminosAceptadosEn());
         }
     }
 }

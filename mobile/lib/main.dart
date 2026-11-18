@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'avisos/avisos.dart';
+import 'avisos/notificador.dart';
 import 'datos/base_local.dart';
 import 'datos/biometria.dart';
 import 'datos/clientes.dart';
@@ -11,6 +13,8 @@ import 'datos/inventario.dart';
 import 'datos/repositorio.dart';
 import 'sincronizacion/sesion.dart';
 import 'sincronizacion/sincronizador.dart';
+import 'dominio/terminos.dart';
+import 'ui/cuenta/pantalla_aceptar_terminos.dart';
 import 'ui/cuenta/pantalla_ingreso.dart';
 import 'ui/inicio/pantalla_bienvenida.dart';
 import 'ui/inicio/pantalla_splash.dart';
@@ -31,6 +35,9 @@ Future<void> main() async {
   await sync.iniciar();
   // Al entrar o renovar la sesión se intenta enviar lo que haya en la cola.
   sesion.addListener(sync.sincronizar);
+  // Avisos locales (cobros, agotados, proveedores, cierre del día): se reprograman cuando cambian los datos.
+  final avisos = Avisos(repo, inventario, cola, NotificadorLocal());
+  await avisos.cargar();
 
   runApp(MultiProvider(
     providers: [
@@ -41,6 +48,7 @@ Future<void> main() async {
       Provider(create: (_) => Biometria()),
       ChangeNotifierProvider.value(value: sesion),
       ChangeNotifierProvider.value(value: sync),
+      ChangeNotifierProvider.value(value: avisos),
     ],
     child: const CaporalApp(),
   ));
@@ -72,6 +80,9 @@ class _CaporalAppState extends State<CaporalApp> {
       inicio = const PantallaSplash();
     } else if (!sesion.activa && !sesion.bienvenidaVista) {
       inicio = const PantallaBienvenida();
+    } else if (sesion.terminosVersion != versionTerminos) {
+      // Primera vez, o los términos cambiaron: se aceptan antes de seguir (también sin Internet).
+      inicio = const PantallaAceptarTerminos();
     } else if (!sesion.activa) {
       inicio = const PantallaIngreso();
     } else if (sesion.tienePin && !sesion.desbloqueada) {

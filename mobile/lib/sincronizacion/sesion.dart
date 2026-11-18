@@ -52,6 +52,10 @@ class Sesion extends ChangeNotifier {
   /// Cuánto quiere ganar sobre el costo de cada producto, en %.
   int margen = Precios.margenRecomendado;
 
+  /// Versión de los términos y condiciones que se aceptó en este celular, y cuándo (null: aún no).
+  String? terminosVersion;
+  DateTime? terminosEn;
+
   bool bienvenidaVista = false;
 
   /// Si este teléfono ya trajo del servidor los datos de la cuenta (se hace una vez por cuenta).
@@ -106,6 +110,8 @@ class Sesion extends ChangeNotifier {
       llaveBreB = p['llave'] as String?;
       compartirCifras = p['cifras'] == true;
       margen = (p['margen'] as int?) ?? Precios.margenRecomendado;
+      terminosVersion = p['terminos'] as String?;
+      terminosEn = p['terminosEn'] == null ? null : DateTime.tryParse(p['terminosEn'] as String);
     }
     notifyListeners();
   }
@@ -121,6 +127,8 @@ class Sesion extends ChangeNotifier {
         'llave': llaveBreB,
         'cifras': compartirCifras,
         'margen': margen,
+        'terminos': terminosVersion,
+        'terminosEn': terminosEn?.toIso8601String(),
       }));
 
   /// El perfil cambió en este teléfono: se guarda la hora y queda pendiente de enviar.
@@ -142,6 +150,8 @@ class Sesion extends ChangeNotifier {
         'compartirCifras': compartirCifras,
         'margen': margen,
         'modificadoEn': (perfilEn ?? DateTime.now().toUtc()).toIso8601String(),
+        if (terminosVersion != null) 'terminosVersion': terminosVersion,
+        if (terminosEn != null) 'terminosAceptadosEn': terminosEn!.toIso8601String(),
       };
 
   /// El servidor confirmó el perfil que se le envió.
@@ -153,6 +163,14 @@ class Sesion extends ChangeNotifier {
   /// Aplica el perfil del servidor si es más reciente que el del teléfono (al restaurar).
   /// Si el servidor nunca lo recibió y el teléfono tiene uno, queda pendiente para enviarlo.
   Future<void> aplicarPerfilDelServidor(Map<String, dynamic> p) async {
+    // La constancia de los términos solo avanza: si el servidor tiene una más nueva (aceptada en otro
+    // celular de la cuenta), se adopta y no se vuelve a pedir.
+    final enTerminos = p['terminosAceptadosEn'] == null ? null : DateTime.tryParse(p['terminosAceptadosEn'] as String);
+    final terminosLocalesNuevos = terminosEn != null && (enTerminos == null || terminosEn!.isAfter(enTerminos));
+    if (enTerminos != null && (terminosEn == null || enTerminos.isAfter(terminosEn!))) {
+      terminosVersion = p['terminosVersion'] as String?;
+      terminosEn = enTerminos;
+    }
     final enServidor = p['modificadoEn'] == null ? null : DateTime.parse(p['modificadoEn'] as String);
     final masNuevo = enServidor != null && (perfilEn == null || enServidor.isAfter(perfilEn!));
     if (masNuevo) {
@@ -176,6 +194,22 @@ class Sesion extends ChangeNotifier {
       await _guardarPerfil();
       if (enServidor == null || perfilEn != null && perfilEn!.isAfter(enServidor)) await _perfilCambiado();
     }
+    // Se aceptaron los términos en este celular y el servidor no tiene esa constancia: se envía
+    // (el perfil ya quedó al día con el del servidor, así que no se pisa nada).
+    if (terminosLocalesNuevos && !perfilPendiente) await _perfilCambiado();
+    await _guardarPerfil();
+    notifyListeners();
+  }
+
+  /// El dueño aceptó los términos y autorizó el tratamiento de sus datos en este celular.
+  /// Queda guardado aunque no haya señal y se envía con el perfil como constancia.
+  Future<void> aceptarTerminos(String version) async {
+    terminosVersion = version;
+    terminosEn = DateTime.now().toUtc();
+    await _guardarPerfil();
+    // Sin cuenta todavía no se marca el perfil como cambiado: un perfil vacío no debe ganarle al del
+    // servidor al entrar. La constancia viaja en el primer envío del perfil (registro o al entrar).
+    if (activa) await _perfilCambiado();
     notifyListeners();
   }
 
@@ -494,6 +528,8 @@ class Sesion extends ChangeNotifier {
     nombrePersona = correo = celular = tipoNegocio = municipio = llaveBreB = null;
     compartirCifras = false;
     margen = Precios.margenRecomendado;
+    terminosVersion = null;
+    terminosEn = null;
     _tienePin = false;
     await cambiarHuella(false);
     await cerrar();

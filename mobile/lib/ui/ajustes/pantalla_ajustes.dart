@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../avisos/avisos.dart';
+import '../../dominio/terminos.dart';
+import '../cuenta/pantalla_terminos.dart';
+import 'pantalla_avisos.dart';
+
 import '../../datos/repositorio.dart';
 import '../../datos/biometria.dart';
 import '../../sincronizacion/sesion.dart';
@@ -125,7 +130,13 @@ class PantallaAjustes extends StatelessWidget {
             fila(Icons.cloud_sync_outlined, 'Estado de envío',
                 sync.pendientes == 0 ? 'Copia al día' : '${sync.pendientes} por enviar', const PantallaEstadoEnvio()),
             lineaSuave,
+            fila(Icons.notifications_outlined, 'Avisos', context.watch<Avisos>().encendidos ? 'Encendidos' : 'Apagados',
+                const PantallaAvisos()),
+            lineaSuave,
             fila(Icons.shield_outlined, 'Privacidad y datos', 'Ley 1581 de 2012', const PantallaPrivacidad()),
+            lineaSuave,
+            fila(Icons.description_outlined, 'Términos y condiciones', 'Versión $versionTerminos',
+                PantallaTexto.terminos()),
             lineaSuave,
             fila(Icons.help_outline, 'Ayuda', 'Estamos para ayudarle', const PantallaAyuda()),
           ]),

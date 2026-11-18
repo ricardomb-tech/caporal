@@ -26,8 +26,16 @@ public class GestionarPerfil {
     /** Guarda el perfil si es más reciente que el del servidor. Repetir el envío no cambia nada. */
     @Transactional
     public Usuario guardar(UUID usuarioId, Perfil perfil, Instant modificadoEn) {
+        return guardar(usuarioId, perfil, modificadoEn, null, null);
+    }
+
+    /** Igual, y deja constancia de los términos aceptados si vienen. */
+    @Transactional
+    public Usuario guardar(UUID usuarioId, Perfil perfil, Instant modificadoEn, String terminosVersion,
+                           Instant terminosAceptadosEn) {
         Usuario u = buscar(usuarioId);
         u.actualizarPerfil(perfil, modificadoEn);
+        u.aceptarTerminos(terminosVersion, terminosAceptadosEn);
         return u;
     }
 

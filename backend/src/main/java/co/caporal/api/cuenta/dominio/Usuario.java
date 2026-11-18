@@ -42,6 +42,11 @@ public class Usuario {
     private Instant perfilEn;
     /** Cuánto quiere ganar sobre el costo de cada producto, en % (null si no lo ha elegido). */
     private Integer margen;
+    /** Versión de los términos y condiciones que aceptó, y cuándo (null si aún no los ha aceptado). */
+    @Column(name = "terminos_version")
+    private String terminosVersion;
+    @Column(name = "terminos_aceptados_en")
+    private Instant terminosAceptadosEn;
 
     protected Usuario() {
     }
@@ -69,6 +74,23 @@ public class Usuario {
     public boolean isCompartirCifras() { return compartirCifras; }
     public Instant getPerfilEn() { return perfilEn; }
     public Integer getMargen() { return margen; }
+    public String getTerminosVersion() { return terminosVersion; }
+    public Instant getTerminosAceptadosEn() { return terminosAceptadosEn; }
+
+    /**
+     * Registra que aceptó una versión de los términos. Va aparte del perfil: es la constancia de una
+     * aceptación, así que solo avanza (una aceptación más vieja que llega tarde no la reemplaza).
+     */
+    public void aceptarTerminos(String version, Instant en) {
+        if (version == null || version.isBlank() || en == null) {
+            return;
+        }
+        if (terminosAceptadosEn != null && !en.isAfter(terminosAceptadosEn)) {
+            return;
+        }
+        terminosVersion = version.trim();
+        terminosAceptadosEn = en;
+    }
 
     /**
      * Aplica el perfil que manda el teléfono solo si es más reciente que el guardado: así un

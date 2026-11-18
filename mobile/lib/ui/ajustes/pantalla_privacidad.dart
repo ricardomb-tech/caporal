@@ -13,7 +13,7 @@ import '../comun/widgets.dart';
 class PantallaPrivacidad extends StatelessWidget {
   const PantallaPrivacidad({super.key});
 
-  static const _politica =
+  static const politica =
       'Qué guardamos: su celular, los datos de su negocio (nombre, tipo, municipio y llave Bre-B), su nombre y correo si los da, '
       'y sus anotaciones. Así, si cambia de celular o reinstala la app, recupera todo al entrar.\n\n'
       'Para qué: guardar su copia de seguridad y mostrarle sus cuentas. Las cifras anónimas solo se usan si usted lo autoriza.\n\n'
@@ -48,7 +48,7 @@ class PantallaPrivacidad extends StatelessWidget {
                 context: context,
                 builder: (d) => AlertDialog(
                   title: const Text('Política de datos'),
-                  content: const SingleChildScrollView(child: Text(_politica)),
+                  content: const SingleChildScrollView(child: Text(politica)),
                   actions: [FilledButton(onPressed: () => Navigator.pop(d), child: const Text('Entendido'))],
                 ),
               );

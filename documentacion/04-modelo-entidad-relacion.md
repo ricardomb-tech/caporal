@@ -104,7 +104,7 @@ erDiagram
 | `mov_inventario` | Cambios de cantidad | Inmutable; `delta ≠ 0`; cantidad = suma de `delta` por producto |
 | `sesion` | Tokens de renovación | Solo la huella SHA-256; un solo uso; reutilizar uno revocado revoca todas las sesiones del negocio |
 
-Migraciones: `backend/src/main/resources/db/migration/V1__esquema_inicial.sql` (usuario, movimiento), `V2__catalogo_e_inventario.sql`, `V3__sesiones_y_hash.sql`, `V4__comprobante_de_pago.sql`, `V5__perfil_del_negocio.sql`, `V6__costo_y_margen.sql`, `V7__categoria_de_producto.sql`.
+Migraciones: `backend/src/main/resources/db/migration/V1__esquema_inicial.sql` (usuario, movimiento), `V2__catalogo_e_inventario.sql`, `V3__sesiones_y_hash.sql`, `V4__comprobante_de_pago.sql`, `V5__perfil_del_negocio.sql`, `V6__costo_y_margen.sql`, `V7__categoria_de_producto.sql`, `V8__aceptacion_de_terminos.sql` (`usuario.terminos_version`, `usuario.terminos_aceptados_en`).
 
 ## Teléfono (SQLite + SQLCipher, versión 5)
 

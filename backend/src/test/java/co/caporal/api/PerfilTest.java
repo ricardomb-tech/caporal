@@ -82,4 +82,27 @@ class PerfilTest {
     void sinSesionNoHayPerfil() throws Exception {
         mvc.perform(get("/api/v1/cuenta/perfil")).andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void quedaConstanciaDeLosTerminosAceptadosYUnaAceptacionViejaNoLaReemplaza() throws Exception {
+        String token = registrar("3107000009");
+        String cuerpo = """
+                {"nombreNegocio":"Tienda","municipio":"Yopal","compartirCifras":false,"modificadoEn":"%s",
+                 "terminosVersion":"%s","terminosAceptadosEn":"%s"}""";
+        mvc.perform(put("/api/v1/cuenta/perfil").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(cuerpo.formatted("2026-11-18T15:00:00Z", "2026-11-18", "2026-11-18T15:00:00Z")))
+                .andExpect(status().isOk());
+        // Un celular viejo que manda una aceptación anterior no cambia la constancia.
+        mvc.perform(put("/api/v1/cuenta/perfil").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(cuerpo.formatted("2026-11-18T16:00:00Z", "2026-01-01", "2026-01-01T10:00:00Z")))
+                .andExpect(status().isOk());
+        // Una app que no conoce los términos (sin esos campos) tampoco la borra.
+        guardar(token, "Tienda", "3107000009", "2026-11-18T17:00:00Z").andExpect(status().isOk());
+        mvc.perform(get("/api/v1/cuenta/perfil").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.terminosVersion").value("2026-11-18"))
+                .andExpect(jsonPath("$.terminosAceptadosEn").value("2026-11-18T15:00:00Z"));
+    }
 }

@@ -29,6 +29,7 @@ public class PerfilController {
     /** Devuelve el perfil que quedó guardado (el enviado, o el del servidor si era más reciente). */
     @PutMapping
     public PerfilDto guardar(@AuthenticationPrincipal UUID usuarioId, @Valid @RequestBody PerfilDto req) {
-        return PerfilDto.de(perfil.guardar(usuarioId, req.aDominio(), req.modificadoEn()));
+        return PerfilDto.de(perfil.guardar(usuarioId, req.aDominio(), req.modificadoEn(), req.terminosVersion(),
+                req.terminosAceptadosEn()));
     }
 }

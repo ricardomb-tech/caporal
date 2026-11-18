@@ -44,6 +44,15 @@ Estados: ✅ hecho y probado · 🧪 hecho, falta probarlo en un celular · 🔧
 | Clave con mayúscula, minúscula, número y símbolo, lista con ✓, ojo y repetirla | 🧪 | También la exige el servidor. PM-23 |
 | Cuenta creada sin Internet con un celular que ya tenía cuenta: botón "Entrar con mi clave" y trae los datos de esa cuenta | 🧪 | Visto en el simulador. PM-24 |
 
+### Nuevo en la versión 12 (TestFlight)
+
+| Función | Estado | Notas |
+|---|---|---|
+| "Antes de empezar": resumen, aceptar Términos y condiciones y autorizar datos (casillas obligatorias) | 🧪 | También cuando cambian los términos. PM-25 |
+| Términos y condiciones completos (Ajustes → Términos y condiciones) | 🔧 | Borrador: falta revisión jurídica y el correo de contacto |
+| Avisos en el celular: cobros, por acabarse, proveedores, copia pendiente, cierre del día | 🧪 | Sin Internet, sin nombres por defecto, se apagan en Ajustes → Avisos. PM-26 |
+| Constancia de la aceptación en el servidor (versión y fecha) | ✅ | Viaja con el perfil |
+
 ### Cuenta, datos y seguridad
 
 | Función | Estado | Notas |
@@ -83,6 +92,8 @@ Estados: ✅ hecho y probado · 🧪 hecho, falta probarlo en un celular · 🔧
 | Foto del comprobante | ✅ | Queda solo en el celular (no se envía, por privacidad) |
 | Crear cuenta | ✅ | La cuenta se termina de crear en el servidor |
 | Mi negocio, mis datos, tipo de negocio, ganancia | ✅ | Se envían después |
+| Aceptar términos y datos | ✅ | La constancia se envía con el perfil |
+| Avisos | ✅ Todo | Los programa el celular; no usan servidor |
 | PIN, huella, exportar mis datos | ✅ | No necesitan servidor |
 | Cobrar por WhatsApp | ✅ La app arma el mensaje | WhatsApp lo envía cuando tenga señal |
 | Entrar con una cuenta que ya existe en un celular nuevo | ❌ Necesita Internet | Hay que verificar la clave en el servidor. La app lo dice claramente |
@@ -99,7 +110,7 @@ Conclusión: todo lo del día a día funciona sin Internet. Solo necesitan seña
 4. **Dos celulares con versiones distintas:** si un celular tiene la versión 10 y otro una anterior, el de la versión anterior no muestra los pedidos fiados. **Hay que actualizar los dos celulares** de una misma cuenta.
 5. Lector de pantalla en las pantallas nuevas (Le debo, proveedor): PM-11.
 
-Pruebas automáticas hoy: **52 del servidor y 114 de la app**, todas pasan.
+Pruebas automáticas hoy: **53 del servidor y 125 de la app**, todas pasan.
 
 ## 4. Seguridad: qué falta
 
