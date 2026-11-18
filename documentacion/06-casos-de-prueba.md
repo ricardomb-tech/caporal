@@ -4,8 +4,8 @@ Caporal se prueba en tres niveles:
 
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
-| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 36 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 59 |
+| Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 41 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 63 |
 | Manual en celular | Demo, modo avión, reinstalación, lector de pantalla | Pasos de abajo | 12 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
@@ -86,6 +86,14 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | `conserva lo anotado en el teléfono y aplica solo los cambios más recientes` | `restauracion_test.dart` | Fusión con datos locales |
 | `pide las páginas siguientes mientras haya más` | `restauracion_test.dart` | Paginación |
 | `si la sesión venció lo informa y no guarda nada` | `restauracion_test.dart` | Error sin efectos |
+| `guardaElPerfilYLoEntregaParaRestaurar` | `PerfilTest` | Perfil y llave Bre-B en el servidor |
+| `unCambioMasViejoNoPisaUnoMasReciente` | `PerfilTest` | Gana el cambio más reciente |
+| `unaCuentaNuevaTieneElPerfilDelRegistroSinFechaDeCambio` | `PerfilTest` | Perfil inicial |
+| `rechazaUnCorreoInvalido` / `sinSesionNoHayPerfil` | `PerfilTest` | Validación y acceso |
+| `al reinstalar trae el negocio, la llave Bre-B y los datos de quien atiende` | `perfil_test.dart` | Restaurar el perfil en la app |
+| `cambiar el negocio lo deja pendiente y se envía con su fecha` | `perfil_test.dart` | Envío del perfil |
+| `un perfil del servidor más viejo no pisa el cambio hecho en el teléfono` | `perfil_test.dart` | Fusión |
+| `sin nada que enviar no llama al servidor` | `perfil_test.dart` | Sin envíos innecesarios |
 
 ### CU-09: cobrar por WhatsApp
 
@@ -151,7 +159,7 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-03 | Producto nuevo al vender (CU-04) | Vendí → + Nuevo → completar → volver | El producto queda agregado a la venta |
 | PM-04 | Modo avión (CU-07) | Activar modo avión → anotar venta, gasto y fiado → cerrar y abrir la app | Todo sigue ahí; aviso "Sin señal" |
 | PM-05 | Volver la señal (CU-07) | Quitar modo avión y esperar | El aviso pasa a "Copia de seguridad al día"; Estado de envío en 0 |
-| PM-06 | Reinstalar (CU-08) | Con todo al día, borrar la app, instalar y entrar | "Trayendo sus datos guardados…" y luego aparecen ventas, fiados, productos y cantidades |
+| PM-06 | Reinstalar (CU-08) | Con todo al día, borrar la app, instalar y entrar | "Trayendo sus datos guardados…" y luego aparecen ventas, fiados, productos, cantidades y, en Mi negocio, la llave Bre-B |
 | PM-07 | Cobrar (CU-09) | Le deben → cliente → Cobrar por WhatsApp un domingo | Advierte que es domingo; el mensaje tiene saldo y llave Bre-B |
 | PM-08 | Pago con comprobante (CU-10) | Ya me pagó → Todo → Bre-B → número → foto → marcar "ya vi la plata" | Deuda en 0; el detalle muestra forma de pago, comprobante y foto |
 | PM-09 | Comprobante repetido (CU-10) | Registrar otro pago con el mismo número | Aviso con fecha, cliente y valor; no guarda |

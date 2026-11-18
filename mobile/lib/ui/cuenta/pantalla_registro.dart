@@ -21,7 +21,6 @@ class PantallaRegistro extends StatefulWidget {
 }
 
 class _PantallaRegistroState extends State<PantallaRegistro> {
-
   final _nombre = TextEditingController();
   final _celular = TextEditingController();
   final _correo = TextEditingController();
@@ -125,7 +124,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
           contenido: (context, alCambiar) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Tarjeta(
               hijo: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _Punto('Qué guardamos', 'Su celular, el nombre de su negocio y sus anotaciones.'),
+                _Punto('Qué guardamos',
+                    'Su celular, los datos de su negocio (con su llave Bre-B), su nombre y correo si los da, y sus anotaciones.'),
                 _Punto('Para qué', 'Para guardar su copia de seguridad y mostrarle sus cuentas.'),
                 _Punto('Quién responde',
                     'Su negocio es el responsable; la Gobernación de Casanare es la encargada del tratamiento.'),

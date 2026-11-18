@@ -42,6 +42,20 @@ Respuesta (igual en ingreso y renovación):
 
 `{"tokenRenovacion": "..."}`. Revoca ese token. Responde igual aunque no exista.
 
+### `GET /api/v1/cuenta/perfil` → 200 (con token)
+
+```json
+{"nombreNegocio": "Tienda La Esperanza", "municipio": "Yopal", "nombrePersona": "Marta Pérez",
+ "correo": "marta@correo.co", "tipoNegocio": "Tienda", "llaveBreB": "3101234567",
+ "compartirCifras": false, "modificadoEn": "2026-11-17T15:00:00Z"}
+```
+
+`modificadoEn` es `null` si el teléfono nunca ha enviado el perfil.
+
+### `PUT /api/v1/cuenta/perfil` → 200 (con token)
+
+Mismo cuerpo, con `modificadoEn` obligatorio (cuándo se cambió en el teléfono). Se guarda solo si es más reciente que el del servidor; la respuesta es el perfil que quedó guardado. 400 si el correo no es válido.
+
 ### `DELETE /api/v1/cuenta` → 204 (con token)
 
 Borra la cuenta y todo lo del negocio: sesiones, movimientos, productos e inventario.

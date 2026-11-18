@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../sincronizacion/sesion.dart';
 import '../comun/formulario_guiado.dart';
 
-/// Datos personales de quien usa la app, paso a paso. Se guardan solo en el teléfono.
+/// Datos personales de quien usa la app, paso a paso. Se guardan en el teléfono y en la copia de seguridad.
 class PantallaMisDatos extends StatefulWidget {
   const PantallaMisDatos({super.key});
 

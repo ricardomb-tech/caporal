@@ -1,0 +1,36 @@
+package co.caporal.api.cuenta.web;
+
+import co.caporal.api.cuenta.dominio.Perfil;
+import co.caporal.api.cuenta.dominio.Usuario;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.time.Instant;
+
+/** Formato JSON del perfil del negocio. */
+public final class PerfilDtos {
+    private PerfilDtos() {
+    }
+
+    public record PerfilDto(
+            @NotBlank @Size(max = 120) String nombreNegocio,
+            @NotBlank @Size(max = 80) String municipio,
+            @Size(max = 120) String nombrePersona,
+            @Size(max = 120) @Email(message = "Revise el correo") String correo,
+            @Size(max = 30) String tipoNegocio,
+            @Size(max = 60) String llaveBreB,
+            boolean compartirCifras,
+            @NotNull Instant modificadoEn) {
+
+        public Perfil aDominio() {
+            return new Perfil(nombreNegocio, municipio, nombrePersona, correo, tipoNegocio, llaveBreB, compartirCifras);
+        }
+
+        /** modificadoEn es null si el teléfono nunca ha enviado el perfil. */
+        public static PerfilDto de(Usuario u) {
+            return new PerfilDto(u.getNombreNegocio(), u.getMunicipio(), u.getNombrePersona(), u.getCorreo(),
+                    u.getTipoNegocio(), u.getLlaveBreB(), u.isCompartirCifras(), u.getPerfilEn());
+        }
+    }
+}

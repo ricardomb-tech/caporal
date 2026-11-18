@@ -20,6 +20,8 @@ class Sesion extends ChangeNotifier {
   static const _clavePin = 'caporal_pin';
   static const _claveBienvenida = 'caporal_bienvenida';
   static const _claveRestaurado = 'caporal_restaurado';
+  static const _clavePerfilEn = 'caporal_perfil_en';
+  static const _clavePerfilPendiente = 'caporal_perfil_pendiente';
 
   String? token;
   String? _tokenRenovacion;
@@ -40,6 +42,10 @@ class Sesion extends ChangeNotifier {
 
   /// Si este teléfono ya trajo del servidor los datos de la cuenta (se hace una vez por cuenta).
   bool restaurado = false;
+
+  /// Cuándo se cambió el perfil en este teléfono y si falta enviarlo al servidor.
+  DateTime? perfilEn;
+  bool perfilPendiente = false;
   bool _tienePin = false;
   bool desbloqueada = false;
 
@@ -55,6 +61,9 @@ class Sesion extends ChangeNotifier {
     nombreNegocio = await _almacen.read(key: _claveNegocio);
     bienvenidaVista = await _almacen.read(key: _claveBienvenida) == '1';
     restaurado = await _almacen.read(key: _claveRestaurado) == '1';
+    final en = await _almacen.read(key: _clavePerfilEn);
+    perfilEn = en == null ? null : DateTime.tryParse(en);
+    perfilPendiente = await _almacen.read(key: _clavePerfilPendiente) == '1';
     _tienePin = await _almacen.read(key: _clavePin) != null;
     final perfil = await _almacen.read(key: _clavePerfil);
     if (perfil != null) {
@@ -82,6 +91,60 @@ class Sesion extends ChangeNotifier {
         'cifras': compartirCifras,
       }));
 
+  /// El perfil cambió en este teléfono: se guarda la hora y queda pendiente de enviar.
+  Future<void> _perfilCambiado() async {
+    perfilEn = DateTime.now().toUtc();
+    perfilPendiente = true;
+    await _almacen.write(key: _clavePerfilEn, value: perfilEn!.toIso8601String());
+    await _almacen.write(key: _clavePerfilPendiente, value: '1');
+  }
+
+  /// Lo que se envía al servidor (PUT /api/v1/cuenta/perfil).
+  Map<String, Object?> perfilParaEnviar() => {
+        'nombreNegocio': nombreNegocio,
+        'municipio': municipio ?? '',
+        'nombrePersona': nombrePersona,
+        'correo': correo,
+        'tipoNegocio': tipoNegocio,
+        'llaveBreB': llaveBreB,
+        'compartirCifras': compartirCifras,
+        'modificadoEn': (perfilEn ?? DateTime.now().toUtc()).toIso8601String(),
+      };
+
+  /// El servidor confirmó el perfil que se le envió.
+  Future<void> perfilEnviado() async {
+    perfilPendiente = false;
+    await _almacen.delete(key: _clavePerfilPendiente);
+  }
+
+  /// Aplica el perfil del servidor si es más reciente que el del teléfono (al restaurar).
+  /// Si el servidor nunca lo recibió y el teléfono tiene uno, queda pendiente para enviarlo.
+  Future<void> aplicarPerfilDelServidor(Map<String, dynamic> p) async {
+    final enServidor = p['modificadoEn'] == null ? null : DateTime.parse(p['modificadoEn'] as String);
+    final masNuevo = enServidor != null && (perfilEn == null || enServidor.isAfter(perfilEn!));
+    if (masNuevo) {
+      nombreNegocio = p['nombreNegocio'] as String? ?? nombreNegocio;
+      municipio = p['municipio'] as String?;
+      nombrePersona = p['nombrePersona'] as String?;
+      correo = p['correo'] as String?;
+      tipoNegocio = p['tipoNegocio'] as String?;
+      llaveBreB = p['llaveBreB'] as String?;
+      compartirCifras = p['compartirCifras'] == true;
+      perfilEn = enServidor;
+      perfilPendiente = false;
+      await _almacen.write(key: _claveNegocio, value: nombreNegocio);
+      await _almacen.write(key: _clavePerfilEn, value: enServidor.toIso8601String());
+      await _almacen.delete(key: _clavePerfilPendiente);
+      await _guardarPerfil();
+    } else {
+      // Lo mínimo que todo negocio tiene en el servidor desde el registro.
+      municipio ??= p['municipio'] as String?;
+      await _guardarPerfil();
+      if (enServidor == null || perfilEn != null && perfilEn!.isAfter(enServidor)) await _perfilCambiado();
+    }
+    notifyListeners();
+  }
+
   Future<void> marcarBienvenida() async {
     bienvenidaVista = true;
     await _almacen.write(key: _claveBienvenida, value: '1');
@@ -92,22 +155,26 @@ class Sesion extends ChangeNotifier {
     nombrePersona = nombre;
     correo = correoNuevo.isEmpty ? null : correoNuevo;
     await _guardarPerfil();
+    await _perfilCambiado();
     notifyListeners();
   }
 
-  Future<void> guardarNegocio({required String nombre, String? tipo, required String municipioNuevo, String? llave}) async {
+  Future<void> guardarNegocio(
+      {required String nombre, String? tipo, required String municipioNuevo, String? llave}) async {
     nombreNegocio = nombre;
     tipoNegocio = tipo;
     municipio = municipioNuevo;
     llaveBreB = (llave == null || llave.isEmpty) ? null : llave;
     await _almacen.write(key: _claveNegocio, value: nombre);
     await _guardarPerfil();
+    await _perfilCambiado();
     notifyListeners();
   }
 
   Future<void> cambiarCompartirCifras(bool valor) async {
     compartirCifras = valor;
     await _guardarPerfil();
+    await _perfilCambiado();
     notifyListeners();
   }
 
@@ -139,6 +206,7 @@ class Sesion extends ChangeNotifier {
     this.tipoNegocio = tipoNegocio;
     this.compartirCifras = compartirCifras;
     await _guardarPerfil();
+    await _perfilCambiado(); // nombre, correo y tipo de negocio viajan en el primer envío
     notifyListeners();
     return null;
   }
@@ -161,8 +229,7 @@ class Sesion extends ChangeNotifier {
   Future<String?> _enviar(String ruta, Map<String, Object?> cuerpo) async {
     try {
       final r = await http
-          .post(Uri.parse('$apiUrl$ruta'),
-              headers: {'Content-Type': 'application/json'}, body: jsonEncode(cuerpo))
+          .post(Uri.parse('$apiUrl$ruta'), headers: {'Content-Type': 'application/json'}, body: jsonEncode(cuerpo))
           .timeout(const Duration(seconds: 15));
       final datos = r.body.isEmpty ? <String, dynamic>{} : jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
       if (r.statusCode == 200 || r.statusCode == 201) {
@@ -176,7 +243,8 @@ class Sesion extends ChangeNotifier {
         notifyListeners();
         return null;
       }
-      return (datos['detail'] ?? datos['message'] ?? 'No pudimos entrar. Revise los datos e intente de nuevo.') as String;
+      return (datos['detail'] ?? datos['message'] ?? 'No pudimos entrar. Revise los datos e intente de nuevo.')
+          as String;
     } catch (_) {
       return 'No hay conexión. Para crear la cuenta o entrar por primera vez necesita Internet.';
     }
@@ -217,9 +285,8 @@ class Sesion extends ChangeNotifier {
   Future<String?> borrarEnServidor() async {
     if (token == null) return 'Para borrar también la copia en el servidor, entre de nuevo con su celular y su clave.';
     try {
-      final r = await http
-          .delete(Uri.parse('$apiUrl/api/v1/cuenta'), headers: {'Authorization': 'Bearer $token'})
-          .timeout(const Duration(seconds: 20));
+      final r = await http.delete(Uri.parse('$apiUrl/api/v1/cuenta'),
+          headers: {'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 20));
       if (r.statusCode == 204 || r.statusCode == 200) return null;
       if (r.statusCode == 401) {
         // El acceso venció: se renueva una vez y se reintenta.
@@ -284,12 +351,16 @@ class Sesion extends ChangeNotifier {
     // Al entrar de nuevo (quizá con otra cuenta) se vuelve a traer el respaldo.
     restaurado = false;
     await _almacen.delete(key: _claveRestaurado);
+    perfilPendiente = false;
+    await _almacen.delete(key: _clavePerfilPendiente);
     notifyListeners();
   }
 
   /// Borra además el perfil y el PIN (se usa al eliminar los datos).
   Future<void> olvidarTodo() async {
     await _almacen.delete(key: _clavePerfil);
+    await _almacen.delete(key: _clavePerfilEn);
+    perfilEn = null;
     await _almacen.delete(key: _clavePin);
     nombrePersona = correo = celular = tipoNegocio = municipio = llaveBreB = null;
     compartirCifras = false;

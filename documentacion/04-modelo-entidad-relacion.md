@@ -32,6 +32,12 @@ erDiagram
         timestamptz bloqueado_hasta
         timestamptz acepta_datos_en "autorización Ley 1581"
         timestamptz creado_en
+        varchar nombre_persona
+        varchar correo
+        varchar tipo_negocio
+        varchar llave_breb "para los recordatorios de cobro"
+        boolean compartir_cifras
+        timestamptz perfil_en "cuándo cambió el perfil en el teléfono"
     }
     MOVIMIENTO {
         uuid id PK "generado en el teléfono"
@@ -87,13 +93,13 @@ erDiagram
 
 | Tabla | Para qué | Reglas |
 |---|---|---|
-| `usuario` | Cuenta del negocio | `celular` único; 5 intentos fallidos bloquean 15 minutos; claves bcrypt antiguas se migran a Argon2id al entrar |
+| `usuario` | Cuenta y perfil del negocio | `celular` único; 5 intentos fallidos bloquean 15 minutos; claves bcrypt antiguas se migran a Argon2id al entrar; el perfil se reemplaza solo por uno con `perfil_en` más reciente |
 | `movimiento` | Ventas, gastos, fiados y abonos | Inmutable; `valor > 0`; el signo lo da el `tipo`; `reverso_de` anula otro movimiento; índice por (`usuario_id`, `recibido_en`) |
 | `producto` | Catálogo | Cada campo se fusiona por su `*_en` más reciente; un producto de otro negocio nunca se modifica |
 | `mov_inventario` | Cambios de cantidad | Inmutable; `delta ≠ 0`; cantidad = suma de `delta` por producto |
 | `sesion` | Tokens de renovación | Solo la huella SHA-256; un solo uso; reutilizar uno revocado revoca todas las sesiones del negocio |
 
-Migraciones: `backend/src/main/resources/db/migration/V1__esquema_inicial.sql` (usuario, movimiento), `V2__catalogo_e_inventario.sql`, `V3__sesiones_y_hash.sql`, `V4__comprobante_de_pago.sql`.
+Migraciones: `backend/src/main/resources/db/migration/V1__esquema_inicial.sql` (usuario, movimiento), `V2__catalogo_e_inventario.sql`, `V3__sesiones_y_hash.sql`, `V4__comprobante_de_pago.sql`, `V5__perfil_del_negocio.sql`.
 
 ## Teléfono (SQLite + SQLCipher, versión 5)
 
@@ -171,6 +177,6 @@ erDiagram
 | `comprobante` | Foto del comprobante de un pago | **No** |
 | `cola` | Lo que falta enviar; se borra al confirmarlo el servidor | No |
 
-Fuera de la base, en el almacén seguro del sistema (Keychain en iOS, Keystore en Android): llave de cifrado de la base, token de acceso, token de renovación, PIN (con sal y hash) y perfil.
+Fuera de la base, en el almacén seguro del sistema (Keychain en iOS, Keystore en Android): llave de cifrado de la base, token de acceso, token de renovación, PIN (con sal y hash) y perfil (con la hora de su último cambio y si falta enviarlo; el PIN nunca sale del teléfono).
 
 Migraciones locales: `mobile/lib/datos/base_local.dart` (`version = 5`, de v2 a v5 sin pérdida de datos; probadas en `test/inventario_test.dart` y `test/pago_test.dart`).

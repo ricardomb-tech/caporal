@@ -28,6 +28,18 @@ public class Usuario {
     private Instant aceptaDatosEn;
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn;
+    @Column(name = "nombre_persona")
+    private String nombrePersona;
+    private String correo;
+    @Column(name = "tipo_negocio")
+    private String tipoNegocio;
+    @Column(name = "llave_breb")
+    private String llaveBreB;
+    @Column(name = "compartir_cifras", nullable = false)
+    private boolean compartirCifras;
+    /** Cuándo se cambió el perfil en el teléfono (null si nunca se ha enviado). */
+    @Column(name = "perfil_en")
+    private Instant perfilEn;
 
     protected Usuario() {
     }
@@ -46,6 +58,38 @@ public class Usuario {
     public String getCelular() { return celular; }
     public String getNombreNegocio() { return nombreNegocio; }
     public String getPasswordHash() { return passwordHash; }
+
+    public String getMunicipio() { return municipio; }
+    public String getNombrePersona() { return nombrePersona; }
+    public String getCorreo() { return correo; }
+    public String getTipoNegocio() { return tipoNegocio; }
+    public String getLlaveBreB() { return llaveBreB; }
+    public boolean isCompartirCifras() { return compartirCifras; }
+    public Instant getPerfilEn() { return perfilEn; }
+
+    /**
+     * Aplica el perfil que manda el teléfono solo si es más reciente que el guardado: así un
+     * celular viejo que se conecta tarde no borra lo que se cambió después en otro.
+     * Devuelve true si lo aplicó.
+     */
+    public boolean actualizarPerfil(Perfil p, Instant modificadoEn) {
+        if (perfilEn != null && !modificadoEn.isAfter(perfilEn)) {
+            return false;
+        }
+        nombreNegocio = p.nombreNegocio().trim();
+        municipio = p.municipio().trim();
+        nombrePersona = vacioANulo(p.nombrePersona());
+        correo = vacioANulo(p.correo());
+        tipoNegocio = vacioANulo(p.tipoNegocio());
+        llaveBreB = vacioANulo(p.llaveBreB());
+        compartirCifras = p.compartirCifras();
+        perfilEn = modificadoEn;
+        return true;
+    }
+
+    private static String vacioANulo(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
+    }
 
     public boolean estaBloqueado(Instant ahora) {
         return bloqueadoHasta != null && bloqueadoHasta.isAfter(ahora);

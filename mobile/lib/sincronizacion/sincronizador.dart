@@ -10,6 +10,7 @@ import 'envio.dart';
 import 'envio_catalogo.dart';
 import 'envio_movimientos.dart';
 import 'restauracion.dart';
+import 'sincronizacion_perfil.dart';
 import 'sesion.dart';
 
 /// Envía la cola de salida cuando hay señal. Es seguro reintentar:
@@ -20,6 +21,7 @@ class Sincronizador extends ChangeNotifier {
   final Sesion sesion;
   late final List<Envio> _envios;
   late final Restauracion _restauracion;
+  late final SincronizacionPerfil _perfil;
   StreamSubscription<List<ConnectivityResult>>? _escucha;
   Timer? _reloj;
   bool _enCurso = false;
@@ -37,6 +39,7 @@ class Sincronizador extends ChangeNotifier {
     // El catálogo va primero: así el servidor conoce el producto antes de recibir sus ventas.
     _envios = [EnvioCatalogo(inventario, repo.cola, api), EnvioMovimientos(repo, api)];
     _restauracion = Restauracion(repo.db, api);
+    _perfil = SincronizacionPerfil(sesion, api);
   }
 
   Future<void> iniciar() async {
@@ -63,11 +66,13 @@ class Sincronizador extends ChangeNotifier {
     pendientes = await repo.cantidadPendiente();
     notifyListeners();
     if (_enCurso || !conSenal || sesion.token == null) return;
-    if (sesion.restaurado && pendientes == 0) return;
+    if (sesion.restaurado && pendientes == 0 && !sesion.perfilPendiente) return;
     _enCurso = true;
     try {
       // Primero se trae lo que hay en el servidor: así un teléfono nuevo o reinstalado recupera todo.
       if (!sesion.restaurado && !await _restaurar()) return;
+      // El perfil va aparte: si falla, las ventas y fiados se siguen enviando igual.
+      await _conRenovacion(_perfil.enviar);
       for (final envio in _envios) {
         if (!await _vaciar(envio)) break;
       }
@@ -83,6 +88,10 @@ class Sincronizador extends ChangeNotifier {
     restaurando = true;
     notifyListeners();
     try {
+      if (!await _conRenovacion(_perfil.traer)) {
+        huboError = conSenal;
+        return false;
+      }
       var resultado = await _restauracion.ejecutar(sesion.token!);
       if (resultado == ResultadoRestauracion.sesionVencida && await sesion.renovar()) {
         resultado = await _restauracion.ejecutar(sesion.token!);
@@ -100,6 +109,14 @@ class Sincronizador extends ChangeNotifier {
       restaurando = false;
       notifyListeners();
     }
+  }
+
+  /// Ejecuta un paso; si el acceso venció lo renueva y lo intenta una vez más. False si hay que parar.
+  Future<bool> _conRenovacion(Future<ResultadoEnvio> Function(String token) paso) async {
+    var r = await paso(sesion.token!);
+    if (r == ResultadoEnvio.sesionVencida && await sesion.renovar()) r = await paso(sesion.token!);
+    if (r == ResultadoEnvio.enviado) ultimaVez = DateTime.now();
+    return r == ResultadoEnvio.enviado || r == ResultadoEnvio.nada;
   }
 
   /// Envía lotes de un tipo hasta que no quede nada. Devuelve false si hay que parar.

@@ -13,7 +13,9 @@ import '../comun/widgets.dart';
 class PantallaPrivacidad extends StatelessWidget {
   const PantallaPrivacidad({super.key});
 
-  static const _politica = 'Qué guardamos: su celular, el nombre y municipio de su negocio y sus anotaciones.\n\n'
+  static const _politica =
+      'Qué guardamos: su celular, los datos de su negocio (nombre, tipo, municipio y llave Bre-B), su nombre y correo si los da, '
+      'y sus anotaciones. Así, si cambia de celular o reinstala la app, recupera todo al entrar.\n\n'
       'Para qué: guardar su copia de seguridad y mostrarle sus cuentas. Las cifras anónimas solo se usan si usted lo autoriza.\n\n'
       'Sus clientes: de quien le debe solo se guarda el nombre y, si el cliente lo autoriza, su celular. '
       'El celular queda solo en este teléfono (no se envía a nuestros servidores), sirve únicamente para '
@@ -25,7 +27,9 @@ class PantallaPrivacidad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sesion = context.watch<Sesion>();
-    Widget fila(IconData i, String t, String d, VoidCallback f, {Color color = Colores.verde, Color fondo = Colores.verdeClaro}) => FilaLista(
+    Widget fila(IconData i, String t, String d, VoidCallback f,
+            {Color color = Colores.verde, Color fondo = Colores.verdeClaro}) =>
+        FilaLista(
           inicio: Insignia.icono(i, color, fondo: fondo),
           titulo: t,
           detalle: d,
@@ -54,7 +58,8 @@ class PantallaPrivacidad extends StatelessWidget {
               final texto = await context.read<Repositorio>().exportarJson();
               await Clipboard.setData(ClipboardData(text: texto));
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copiamos sus datos. Péguelos en un mensaje o un documento.')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Copiamos sus datos. Péguelos en un mensaje o un documento.')));
               }
             }),
             lineaSuave,
@@ -67,7 +72,8 @@ class PantallaPrivacidad extends StatelessWidget {
             const Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Cifras anónimas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                Text('Ayudan a entender cómo van los negocios del territorio', style: TextStyle(fontSize: 13, color: Colores.gris)),
+                Text('Ayudan a entender cómo van los negocios del territorio',
+                    style: TextStyle(fontSize: 13, color: Colores.gris)),
               ]),
             ),
             Switch(value: sesion.compartirCifras, onChanged: sesion.cambiarCompartirCifras),
@@ -133,14 +139,17 @@ class _PantallaEliminarState extends State<PantallaEliminar> {
         const Aviso(
             icono: Icons.delete_outline,
             titulo: 'Esto no se puede deshacer',
-            texto: 'Se borran su cuenta, sus movimientos, productos y clientes, en el teléfono y en nuestros servidores.',
+            texto:
+                'Se borran su cuenta, sus movimientos, productos y clientes, en el teléfono y en nuestros servidores.',
             fondo: Colores.rojoClaro,
             color: Colores.texto),
         const Tarjeta(
           hijo: Row(children: [
             Icon(Icons.info_outline, color: Colores.gris, size: 20),
             SizedBox(width: 10),
-            Expanded(child: Text('Antes de borrar, puede copiar sus datos desde Privacidad y datos.', style: TextStyle(fontSize: 14, color: Colores.gris))),
+            Expanded(
+                child: Text('Antes de borrar, puede copiar sus datos desde Privacidad y datos.',
+                    style: TextStyle(fontSize: 14, color: Colores.gris))),
           ]),
         ),
         TextField(
@@ -151,7 +160,8 @@ class _PantallaEliminarState extends State<PantallaEliminar> {
         if (_error != null) Text(_error!, style: const TextStyle(color: Colores.rojo, fontSize: 15)),
       ],
       pie: Column(mainAxisSize: MainAxisSize.min, children: [
-        BotonCaporal(_borrando ? 'Borrando…' : 'Eliminar todo', estilo: EstiloBoton.peligro, icono: Icons.delete_outline, alTocar: listo ? _eliminar : null),
+        BotonCaporal(_borrando ? 'Borrando…' : 'Eliminar todo',
+            estilo: EstiloBoton.peligro, icono: Icons.delete_outline, alTocar: listo ? _eliminar : null),
         const SizedBox(height: 10),
         BotonCaporal('Mejor no, volver', estilo: EstiloBoton.contorno, alTocar: () => Navigator.pop(context)),
       ]),

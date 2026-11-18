@@ -101,7 +101,7 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 ## CU-08 Restaurar en otro teléfono
 
 - **Actor:** dueño y servidor. **Precondición:** la app fue reinstalada o es otro celular; hay señal.
-- **Flujo principal:** al entrar (CU-02), la app pide el respaldo por páginas de 500 → guarda productos, movimientos e inventario sin volver a encolarlos → muestra "Trayendo sus datos guardados…" mientras tanto → al terminar, el inicio muestra todo.
+- **Flujo principal:** al entrar (CU-02), la app trae el perfil del negocio (nombre, tipo, municipio, llave Bre-B, datos de quien atiende) y pide el respaldo por páginas de 500 → guarda productos, movimientos e inventario sin volver a encolarlos → muestra "Trayendo sus datos guardados…" mientras tanto → al terminar, el inicio muestra todo.
 - **Excepciones:** sin señal o error → lo intenta en la siguiente sincronización; acceso vencido → renueva y reintenta.
 - **Reglas:** restaurar dos veces no duplica; lo anotado en el teléfono se conserva; en productos gana el cambio más reciente. Lo que nunca llegó al servidor (anotado sin señal y con la app borrada antes de enviarlo) no se puede recuperar.
 - **Código:** App `sincronizacion/restauracion.dart`. API `respaldo/aplicacion/RestaurarRespaldo`.
@@ -145,8 +145,8 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 ## CU-14 Editar datos personales y del negocio
 
 - **Actor:** dueño. **Flujo:** en Ajustes, "Mis datos personales" (nombre, correo) y "Mi negocio" (nombre, tipo, municipio, llave Bre-B), cada uno como formulario guiado.
-- **Regla:** el celular es el usuario y no se cambia desde la app.
-- **Código:** `ui/ajustes/pantalla_mis_datos.dart`, `ui/ajustes/pantalla_mi_negocio.dart`.
+- **Reglas:** el celular es el usuario y no se cambia desde la app. Cada cambio queda pendiente y se envía al servidor con su hora; si dos celulares lo cambian, gana el más reciente. Si el envío falla, las ventas y fiados se siguen enviando igual.
+- **Código:** `ui/ajustes/pantalla_mis_datos.dart`, `ui/ajustes/pantalla_mi_negocio.dart`, `sincronizacion/sincronizacion_perfil.dart`. API `cuenta/aplicacion/GestionarPerfil`.
 
 ## CU-15 Exportar o borrar mis datos (Ley 1581)
 
