@@ -17,18 +17,45 @@ class PantallaDetalle extends StatelessWidget {
   const PantallaDetalle({super.key, required this.movimiento});
 
   String _fecha(DateTime f) {
-    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const meses = [
+      'enero',
+      'febrero',
+      'marzo',
+      'abril',
+      'mayo',
+      'junio',
+      'julio',
+      'agosto',
+      'septiembre',
+      'octubre',
+      'noviembre',
+      'diciembre'
+    ];
     return '${f.day} de ${meses[f.month - 1]}';
   }
 
   Future<void> _corregir(BuildContext context) async {
     final repo = context.read<Repositorio>();
     final navegador = Navigator.of(context);
+    final motivo = await repo.porQueNoSeCorrige(movimiento);
+    if (!context.mounted) return;
+    if (motivo != null) {
+      await showDialog<void>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Primero corrija el pago'),
+          content: Text(motivo),
+          actions: [FilledButton(onPressed: () => Navigator.pop(c), child: const Text('Entendido'))],
+        ),
+      );
+      return;
+    }
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('¿Corregir este movimiento?'),
-        content: Text('Se anota un reverso de ${pesos(movimiento.valor)} y puede registrar el valor correcto. El original queda en su historial.'),
+        content: Text(
+            'Se anula este movimiento de ${pesos(movimiento.valor)} y se abre con los mismos datos para que cambie lo que estaba mal. El original queda en su historial.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
           FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Corregir')),
@@ -37,8 +64,8 @@ class PantallaDetalle extends StatelessWidget {
     );
     if (ok != true) return;
     await repo.corregir(movimiento);
-    navegador.pushReplacement(MaterialPageRoute(
-        builder: (_) => PantallaRegistrar(tipo: movimiento.tipo, clienteInicial: movimiento.clienteNombre)));
+    navegador.pushReplacement(
+        MaterialPageRoute(builder: (_) => PantallaRegistrar(tipo: movimiento.tipo, corrigiendo: movimiento)));
   }
 
   @override
@@ -46,7 +73,9 @@ class PantallaDetalle extends StatelessWidget {
     final repo = context.watch<Repositorio>();
     final f = movimiento.creadoEn.toLocal();
     final esReverso = movimiento.reversoDe != null;
-    final color = movimiento.tipo == TipoMovimiento.gasto ? Colores.rojo : (movimiento.tipo == TipoMovimiento.fiado ? Colores.ambarTexto : Colores.verde);
+    final color = movimiento.tipo == TipoMovimiento.gasto
+        ? Colores.rojo
+        : (movimiento.tipo == TipoMovimiento.fiado ? Colores.ambarTexto : Colores.verde);
     return FutureBuilder<(bool, bool)>(
       future: () async {
         final corregido = await repo.yaCorregido(movimiento.id);
@@ -57,7 +86,11 @@ class PantallaDetalle extends StatelessWidget {
         final (corregido, pendiente) = s.data ?? (false, false);
         final filas = <(String, String, Color?)>[
           ('Fecha', _fecha(f), null),
-          ('Hora', '${f.hour % 12 == 0 ? 12 : f.hour % 12}:${f.minute.toString().padLeft(2, '0')} ${f.hour < 12 ? 'a. m.' : 'p. m.'}', null),
+          (
+            'Hora',
+            '${f.hour % 12 == 0 ? 12 : f.hour % 12}:${f.minute.toString().padLeft(2, '0')} ${f.hour < 12 ? 'a. m.' : 'p. m.'}',
+            null
+          ),
           if (movimiento.medioPago != null) ('Forma de pago', nombreFormaDePago(movimiento.medioPago), null),
           if (movimiento.referencia != null) ('Comprobante', movimiento.referencia!, null),
           ('Cliente', movimiento.clienteNombre ?? 'Sin cliente', null),
@@ -70,7 +103,8 @@ class PantallaDetalle extends StatelessWidget {
             Tarjeta(
               relleno: const EdgeInsets.all(20),
               hijo: Column(children: [
-                Text('${signoDe(movimiento)}${pesos(movimiento.valor)}', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: color)),
+                Text('${signoDe(movimiento)}${pesos(movimiento.valor)}',
+                    style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: color)),
                 if (movimiento.descripcion != null)
                   Text(movimiento.descripcion!, style: const TextStyle(fontSize: 15, color: Colores.gris)),
               ]),
@@ -85,7 +119,8 @@ class PantallaDetalle extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       Text(fila.$1, style: const TextStyle(fontSize: 15, color: Colores.gris)),
-                      Text(fila.$2, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fila.$3 ?? Colores.texto)),
+                      Text(fila.$2,
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fila.$3 ?? Colores.texto)),
                     ]),
                   ),
                 ],
@@ -98,14 +133,15 @@ class PantallaDetalle extends StatelessWidget {
                   ? 'Anula un movimiento anterior. Los dos quedan en su historial.'
                   : (corregido
                       ? 'Ya existe un reverso de este movimiento.'
-                      : 'No se borra. Se anota un reverso de ${pesos(movimiento.valor)} y puede registrar el valor correcto. Así su historial queda claro.'),
+                      : 'No se borra: se anula con un reverso y se abre con los mismos datos para que cambie lo que estaba mal. Así su historial queda claro.'),
               fondo: Colores.ambarClaro,
               color: Colores.ambarTexto,
             ),
           ],
           pie: (esReverso || corregido)
               ? null
-              : BotonCaporal('Corregir este movimiento', estilo: EstiloBoton.contorno, icono: Icons.edit_outlined, alTocar: () => _corregir(context)),
+              : BotonCaporal('Corregir este movimiento',
+                  estilo: EstiloBoton.contorno, icono: Icons.edit_outlined, alTocar: () => _corregir(context)),
         );
       },
     );

@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import 'cola_salida.dart';
 import 'inventario.dart';
+import '../dominio/formato.dart';
 import '../dominio/movimiento.dart';
 import '../dominio/producto.dart';
 import '../dominio/resumenes.dart';
@@ -47,7 +48,8 @@ class Repositorio extends ChangeNotifier {
   }
 
   Movimiento _nuevo(TipoMovimiento tipo, int valor, String? descripcion, String? clienteNombre, String? medioPago,
-          String? reversoDe, {String? referencia}) =>
+          String? reversoDe,
+          {String? referencia}) =>
       Movimiento(
         id: const Uuid().v4(),
         tipo: tipo,
@@ -115,7 +117,10 @@ class Repositorio extends ChangeNotifier {
     final marcas = List.filled(ids.length, '?').join(',');
     final filas = await db.query('movimiento', where: 'id IN ($marcas)', whereArgs: ids);
     final porId = {for (final f in filas) f['id'] as String: Movimiento.deFila(f)};
-    return [for (final id in ids) if (porId[id] != null) porId[id]!];
+    return [
+      for (final id in ids)
+        if (porId[id] != null) porId[id]!
+    ];
   }
 
   Future<int> cantidadPendiente() => cola.cantidad();
@@ -168,9 +173,37 @@ class Repositorio extends ChangeNotifier {
 
   /// Corregir no borra: anota un reverso que apunta al movimiento original
   /// y deshace su efecto en el inventario (una venta devuelve unidades; un pedido las saca).
+  /// Lo que el cliente debe hoy (fiados menos pagos, contando los reversos). Negativo: tiene saldo a favor.
+  Future<int> saldoDe(String cliente) async {
+    final r = await db.rawQuery('''
+      SELECT COALESCE(SUM((CASE WHEN tipo = 'fiado' THEN valor ELSE -valor END)
+                          * (CASE WHEN reverso_de IS NULL THEN 1 ELSE -1 END)), 0) AS saldo
+      FROM movimiento WHERE tipo IN ('fiado', 'abono') AND cliente_nombre = ?''', [cliente]);
+    return r.first['saldo'] as int;
+  }
+
+  /// Null si se puede corregir; si no, el motivo para mostrarle al dueño.
+  /// Un fiado que ya se pagó no se corrige directamente: quedaría un pago sin deuda.
+  Future<String?> porQueNoSeCorrige(Movimiento m) async {
+    if (m.reversoDe != null) return 'Este movimiento ya es una corrección.';
+    if (await yaCorregido(m.id)) return 'Este movimiento ya fue corregido.';
+    if (m.tipo == TipoMovimiento.fiado && m.clienteNombre != null) {
+      final saldo = await saldoDe(m.clienteNombre!);
+      if (saldo - m.valor < 0) {
+        final pagado = m.valor - saldo;
+        return '${m.clienteNombre} ya le pagó ${pesos(pagado)} de este fiado. '
+            'Para corregirlo, primero corrija ese pago en "Le deben" o en Movimientos.';
+      }
+    }
+    return null;
+  }
+
   Future<Movimiento> corregir(Movimiento original) async {
-    final m = _nuevo(original.tipo, original.valor, original.descripcion, original.clienteNombre, original.medioPago,
-        original.id, referencia: original.referencia);
+    final motivo = await porQueNoSeCorrige(original);
+    if (motivo != null) throw StateError(motivo);
+    final m = _nuevo(
+        original.tipo, original.valor, original.descripcion, original.clienteNombre, original.medioPago, original.id,
+        referencia: original.referencia);
     await db.transaction((tx) async {
       await _guardar(tx, m);
       await inventario.revertirLineas(tx, original.id, m.id);
@@ -209,13 +242,11 @@ class Repositorio extends ChangeNotifier {
     return const JsonEncoder.withIndent('  ').convert({
       'movimientos': movs.map((m) => m.aJson()).toList(),
       'productos': [
-        for (final p in prods)
-          {'nombre': p.nombre, 'precio': p.precio, 'cantidad': p.controlaStock ? p.stock : null}
+        for (final p in prods) {'nombre': p.nombre, 'precio': p.precio, 'cantidad': p.controlaStock ? p.stock : null}
       ],
       'movimientosDeInventario': inv.map((e) => e.aJson()).toList(),
       'clientes': [
-        for (final c in await db.query('cliente'))
-          {'nombre': c['nombre'], 'celular': c['celular']}
+        for (final c in await db.query('cliente')) {'nombre': c['nombre'], 'celular': c['celular']}
       ],
     });
   }

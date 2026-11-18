@@ -129,7 +129,8 @@ Formato de cada caso: actor, precondición, flujo principal, alternativas y exce
 
 ## CU-11 Corregir un movimiento
 
-- **Actor:** dueño. **Flujo:** abre el movimiento en el historial → "Corregir" → confirma → se anota un reverso y puede registrar el valor correcto.
+- **Actor:** dueño. **Flujo:** abre el movimiento en el historial → "Corregir" → confirma → se anota un reverso que lo anula y la pantalla se abre **con los mismos datos** (valor, productos y cantidades, forma de pago, cliente) para cambiar solo lo que estaba mal.
+- **Excepción:** un fiado que ya fue pagado (total o en parte, de forma que quitarlo dejaría al cliente con plata a favor) no se corrige directamente: la app pide corregir primero el pago.
 - **Reglas:** nada se borra; el reverso devuelve las unidades al inventario y, si era un pago, libera su comprobante. Un movimiento ya corregido no se corrige dos veces.
 - **Código:** `ui/movimientos/pantalla_detalle.dart`, `datos/repositorio.dart`.
 

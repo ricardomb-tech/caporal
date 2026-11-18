@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../dominio/movimiento.dart';
 import '../../dominio/producto.dart';
 import '../../datos/clientes.dart';
+import '../../datos/inventario.dart';
 import '../../datos/repositorio.dart';
 import '../../dominio/formato.dart';
 import 'panel_pedido.dart';
@@ -17,7 +18,11 @@ import '../comun/widgets.dart';
 class PantallaRegistrar extends StatefulWidget {
   final TipoMovimiento tipo;
   final String? clienteInicial;
-  const PantallaRegistrar({super.key, required this.tipo, this.clienteInicial});
+
+  /// Movimiento que se está corrigiendo: la pantalla abre con sus datos (valor, productos, cliente,
+  /// forma de pago) para cambiar solo lo que estaba mal.
+  final Movimiento? corrigiendo;
+  const PantallaRegistrar({super.key, required this.tipo, this.clienteInicial, this.corrigiendo});
 
   @override
   State<PantallaRegistrar> createState() => _PantallaRegistrarState();
@@ -28,7 +33,8 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   static const _categorias = [_pedido, 'Mercado', 'Arriendo', 'Servicios', 'Transporte', 'Otro'];
 
   String _digitos = '';
-  late final TextEditingController _cliente = TextEditingController(text: widget.clienteInicial ?? '');
+  late final TextEditingController _cliente =
+      TextEditingController(text: widget.corrigiendo?.clienteNombre ?? widget.clienteInicial ?? '');
   // Celular del cliente al fiar (opcional): solo se guarda si el cliente lo autoriza (Ley 1581).
   final _celularCliente = TextEditingController();
   bool _clienteAutoriza = false;
@@ -46,6 +52,38 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
   /// por eso usa la misma pantalla de venta, con productos e inventario, y "Fiado" como forma de pago.
   late bool _fiado = widget.tipo == TipoMovimiento.fiado;
 
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.corrigiendo;
+    if (m != null) _cargarParaCorregir(m);
+  }
+
+  /// Vuelve a poner lo que tenía el movimiento original.
+  Future<void> _cargarParaCorregir(Movimiento m) async {
+    _digitos = m.valor.toString();
+    if (m.medioPago != null) _medio = m.medioPago!;
+    final partes = (m.descripcion ?? '').split(' · ');
+    if (m.tipo == TipoMovimiento.gasto && _categorias.contains(partes.first)) {
+      _categoria = partes.first;
+      final nota = partes.length > 1 && partes.first != _pedido ? partes.sublist(1).join(' · ') : '';
+      _nota.text = nota;
+    }
+    final lineas = await context.read<Inventario>().lineasDe(m.id);
+    if (!mounted) return;
+    setState(() {
+      if (_esPedido) {
+        for (final l in lineas) {
+          _llegada[l.producto.id] = l;
+        }
+      } else if (_esVenta) {
+        for (final l in lineas) {
+          _carrito.addAll(List.filled(l.cantidad, l.producto));
+        }
+      }
+    });
+  }
+
   int get _valor => _digitos.isEmpty ? 0 : int.parse(_digitos);
   TipoMovimiento get _tipo => _fiado ? TipoMovimiento.fiado : widget.tipo;
   bool get _esFiado => _tipo == TipoMovimiento.fiado;
@@ -62,12 +100,14 @@ class _PantallaRegistrarState extends State<PantallaRegistrar> {
         TipoMovimiento.abono => 'Me pagaron',
       };
 
-  String get _subtitulo => switch (_tipo) {
-        TipoMovimiento.venta => 'Toque un producto o escriba el valor',
-        TipoMovimiento.gasto => 'Anote lo que pagó; si llegó mercancía, elija Pedido',
-        TipoMovimiento.fiado => 'Lo que se lleva y quién lo paga después',
-        TipoMovimiento.abono => 'Anote lo que le pagaron',
-      };
+  String get _subtitulo => widget.corrigiendo != null
+      ? 'Cambie lo que estaba mal y guarde'
+      : switch (_tipo) {
+          TipoMovimiento.venta => 'Toque un producto o escriba el valor',
+          TipoMovimiento.gasto => 'Anote lo que pagó; si llegó mercancía, elija Pedido',
+          TipoMovimiento.fiado => 'Lo que se lleva y quién lo paga después',
+          TipoMovimiento.abono => 'Anote lo que le pagaron',
+        };
 
   Color get _colorMonto => _esGasto ? Colores.rojo : (_esFiado ? Colores.ambarTexto : Colores.verde);
 

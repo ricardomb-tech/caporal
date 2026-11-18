@@ -5,8 +5,8 @@ Caporal se prueba en tres niveles:
 | Nivel | Qué cubre | Cómo se corre | Cantidad |
 |---|---|---|---|
 | Integración de la API | Servicios completos con base H2 en memoria, seguridad incluida | `cd backend && mvn verify` | 47 |
-| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 71 |
-| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 14 |
+| App (unidad, datos y pantallas) | Reglas, base local real (SQLite con `sqflite_common_ffi`), pantallas y accesibilidad | `cd mobile && flutter test` | 75 |
+| Manual en celular | Demo, modo avión, reinstalación, dos celulares, lector de pantalla | Pasos de abajo | 15 |
 
 Además, el escaneo de dependencias con Trivy no reporta vulnerabilidades altas ni críticas (ver [auditoría](seguridad/auditoria-2026-11-17.md)).
 
@@ -146,6 +146,10 @@ Cada prueba se cita por su nombre en el código, que describe lo que verifica.
 | Prueba | Archivo | Verifica |
 |---|---|---|
 | `corregir una venta devuelve las unidades al inventario` | `inventario_test.dart` | Reverso de inventario |
+| `un fiado ya pagado no se corrige: primero hay que corregir el pago` | `corregir_test.dart` | Nunca queda un pago sin deuda |
+| `un fiado pagado en parte solo se corrige si no deja saldo a favor` | `corregir_test.dart` | Pagos parciales |
+| `un movimiento ya corregido o un reverso no se vuelven a corregir` | `corregir_test.dart` | Sin dobles correcciones |
+| `al corregir una venta, la pantalla abre con el valor, los productos y la forma de pago` | `corregir_test.dart` | Corregir sin volver a escribir todo |
 | `corregir un fiado devuelve las unidades y quita la deuda` | `fiado_clientes_test.dart` | Reverso de fiado |
 | `un pago corregido libera su comprobante` | `pago_test.dart` | Reverso de pago |
 | `el signo del reverso es el contrario al del movimiento original` | `formato_test.dart` | Presentación del reverso |
@@ -185,7 +189,8 @@ Preparación: app instalada contra el servidor de pruebas, cuenta creada, sesió
 | PM-07 | Cobrar (CU-09) | Le deben → cliente → Cobrar por WhatsApp un domingo o después de las 7 p. m. | Advierte y pregunta "¿Enviar de todos modos?"; al aceptar abre WhatsApp con saldo y llave Bre-B |
 | PM-08 | Pago con comprobante (CU-10) | Ya me pagó → Todo → Bre-B → número → foto → marcar "ya vi la plata" | Deuda en 0; el detalle muestra forma de pago, comprobante y foto |
 | PM-09 | Comprobante repetido (CU-10) | Registrar otro pago con el mismo número | Aviso con fecha, cliente y valor; no guarda |
-| PM-10 | Corregir (CU-11) | Abrir una venta → Corregir | Aparece el reverso; el inventario vuelve; el original sigue en el historial |
+| PM-10 | Corregir (CU-11) | Abrir una venta con productos → Corregir | Abre con el mismo valor y productos; al guardar, aparece el reverso y la venta nueva; el original sigue en el historial |
+| PM-15 | Fiado ya pagado (CU-11) | Fiar → registrar el pago → intentar corregir el fiado | Avisa "Primero corrija el pago" y no deja corregir |
 | PM-11 | Lector de pantalla | Activar VoiceOver (iOS) o TalkBack (Android) y recorrer inicio, Vendí y Le deben | Cada zona tocable se anuncia como botón con nombre; los chips dicen si están elegidos |
 | PM-14 | Huella (CU-03) | Crear PIN → activar Huella o Face ID → cerrar y abrir la app | Pide la huella o la cara y abre sin PIN; si se cancela, deja escribir el PIN |
 | PM-13 | Dos celulares (CU-08) | Entrar con la misma cuenta en dos celulares; vender en uno | En menos de dos minutos, la venta aparece en el otro |

@@ -148,7 +148,8 @@ class Inventario extends ChangeNotifier {
   Future<void> contarStock(String productoId, int contado) async {
     await db.transaction((tx) async {
       await _asegurarControl(tx, productoId);
-      final r = await tx.rawQuery('SELECT COALESCE(SUM(delta), 0) AS s FROM mov_inventario WHERE producto_id = ?', [productoId]);
+      final r = await tx
+          .rawQuery('SELECT COALESCE(SUM(delta), 0) AS s FROM mov_inventario WHERE producto_id = ?', [productoId]);
       final diferencia = contado - ((r.first['s'] as int?) ?? 0);
       if (diferencia != 0) {
         await _evento(tx, productoId: productoId, delta: diferencia, motivo: MotivoInventario.ajuste);
@@ -182,8 +183,8 @@ class Inventario extends ChangeNotifier {
   /// Corregir una venta devuelve sus unidades; corregir un pedido las vuelve a sacar.
   /// Se llama dentro de la transacción del reverso.
   Future<void> revertirLineas(DatabaseExecutor tx, String originalId, String reversoId) async {
-    final filas = await tx.query('mov_inventario',
-        where: "movimiento_id = ? AND motivo IN ('venta', 'compra')", whereArgs: [originalId]);
+    final filas = await tx
+        .query('mov_inventario', where: "movimiento_id = ? AND motivo IN ('venta', 'compra')", whereArgs: [originalId]);
     for (final f in filas.map(MovInventario.deFila)) {
       await _evento(tx,
           productoId: f.productoId,
@@ -192,6 +193,21 @@ class Inventario extends ChangeNotifier {
           movimientoId: reversoId,
           precioUnitario: f.precioUnitario);
     }
+  }
+
+  /// Los productos y cantidades de una venta, fiado o pedido, para volver a cargarlos al corregirlo.
+  Future<List<LineaVenta>> lineasDe(String movimientoId) async {
+    final filas = await db.query('mov_inventario',
+        columns: ['producto_id', 'delta'],
+        where: "movimiento_id = ? AND motivo IN ('venta', 'compra')",
+        whereArgs: [movimientoId],
+        orderBy: 'creado_en ASC');
+    if (filas.isEmpty) return const [];
+    final productos = {for (final p in await productosDe(filas.map((f) => f['producto_id'] as String))) p.id: p};
+    return [
+      for (final f in filas)
+        if (productos[f['producto_id']] != null) LineaVenta(productos[f['producto_id']]!, (f['delta'] as int).abs()),
+    ];
   }
 
   // ---- Envío al servidor ----
@@ -208,7 +224,8 @@ class Inventario extends ChangeNotifier {
     final lista = ids.toList();
     if (lista.isEmpty) return const [];
     final marcas = List.filled(lista.length, '?').join(',');
-    final filas = await db.query('mov_inventario', where: 'id IN ($marcas)', whereArgs: lista, orderBy: 'creado_en ASC');
+    final filas =
+        await db.query('mov_inventario', where: 'id IN ($marcas)', whereArgs: lista, orderBy: 'creado_en ASC');
     return filas.map(MovInventario.deFila).toList();
   }
 
