@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sincronizar, crear la cuenta y entrar. Sin este permiso la versión de publicación no tiene red
+         (en depuración lo agrega el manifiesto de debug y por eso allí sí funcionaba). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <!-- Avisos: mostrarlos (Android 13+, se pide al dueño) y volver a programarlos si el celular se reinicia. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
